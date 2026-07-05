@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Attending Review (Roadmap #18)</title>
+<style>
+  :root{--bg:#0b1120;--panel:#131c2e;--line:#22304a;--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;--ok:#34d399;--close:#fbbf24;--bad:#fb7185;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,Segoe UI,Roboto,sans-serif;
+       display:flex;flex-direction:column;align-items:center;padding:24px}
+  h1{font-size:19px;margin:0 0 2px} .sub{color:var(--mut);margin:0 0 16px}
+  .card{width:min(620px,96vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+  .examtitle{font-size:15px;font-weight:700}
+  .attending{display:flex;gap:12px;align-items:flex-start;margin-top:6px}
+  .avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#0e7490);flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;color:#04121f}
+  .bubble{background:#0e1626;border:1px solid var(--line);border-radius:12px;border-top-left-radius:3px;padding:12px 14px;flex:1;min-height:52px}
+  .steps{width:min(620px,96vw)}
+  .step{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:.25;transition:opacity .25s}
+  .step.shown{opacity:1}
+  .step .field{width:120px;flex:none;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding-top:2px}
+  .step .body{flex:1}
+  .vbadge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em}
+  .v-good{background:#34d39922;color:var(--ok)} .v-close{background:#fbbf2422;color:var(--close)} .v-miss{background:#fb718522;color:var(--bad)}
+  .choice{font-size:12px;color:var(--mut);margin-top:3px}
+  .comment{margin-top:4px}
+  .controls{margin:6px 0 16px} button{background:var(--cy);color:#04121f;border:none;border-radius:10px;padding:10px 18px;font-weight:700;cursor:pointer;margin-right:8px}
+  button.ghost{background:#0e1626;color:var(--ink);border:1px solid var(--line)}
+  .summary{width:min(620px,96vw)}
+  .scorebig{font-size:40px;font-weight:900}
+  .foot{color:var(--mut);font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+  <h1>Attending Review</h1>
+  <p class="sub">Replays a SIM step-by-step with an attending radiologist explaining each call. Press Play.</p>
+
+  <div class="card">
+    <div class="examtitle" id="examTitle">AP Elbow — trauma</div>
+    <div class="attending">
+      <div class="avatar">Dr</div>
+      <div class="bubble" id="bubble">Ready when you are. Hit Play and I’ll walk your images.</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="play()">▶ Play review</button>
+    <button class="ghost" onclick="stepNext()">Next step</button>
+    <button class="ghost" onclick="loadCase()">Shuffle case</button>
+  </div>
+
+  <div class="steps" id="steps"></div>
+  <div class="summary" id="summary"></div>
+  <div class="foot" id="foot"></div>
+
+<script src="ghost-replay.js"></script>
+<script>
+  // sample recorded SIMs (student choices vs. correct)
+  const CASES=[
+    { title:'AP Elbow — trauma', steps:[
+      {field:'kvp',chosen:70,correct:70,ok:true},
+      {field:'mas',chosen:2.5,correct:5,ok:false},
+      {field:'sid',chosen:40,correct:40,ok:true},
+      {field:'ir',chosen:'Bucky',correct:'Tabletop / Non-Bucky',ok:false},
+      {field:'crAngle',chosen:15,correct:0,ok:false},
+      {field:'crPos',chosen:'over distal humerus',correct:'mid-elbow joint',ok:false},
+      {field:'pt',chosen:'AP, arm extended',correct:'AP, arm extended',ok:true},
+    ]},
+    { title:'PA Wrist', steps:[
+      {field:'kvp',chosen:62,correct:60,ok:false},
+      {field:'mas',chosen:4,correct:4,ok:true},
+      {field:'sid',chosen:40,correct:40,ok:true},
+      {field:'focal',chosen:'Large',correct:'Small',ok:false},
+      {field:'crPos',chosen:'midcarpals',correct:'midcarpals',ok:true},
+      {field:'pt',chosen:'PA, fingers flexed',correct:'PA, hand pronated',ok:false},
+    ]},
+    { title:'Lateral Foot', steps:[
+      {field:'kvp',chosen:60,correct:60,ok:true},
+      {field:'mas',chosen:9,correct:3.5,ok:false},
+      {field:'sid',chosen:40,correct:40,ok:true},
+      {field:'crPos',chosen:'medial cuneiform',correct:'medial cuneiform',ok:true},
+      {field:'crAngle',chosen:0,correct:0,ok:true},
+      {field:'pt',chosen:'mediolateral',correct:'mediolateral',ok:true},
+    ]},
+  ];
+  let current, reviewData, idx=0, timer=null;
+
+  function loadCase(){
+    clearInterval(timer);
+    current=CASES[Math.floor(Math.random()*CASES.length)];
+    reviewData=GhostReplay.review(current.steps);
+    idx=0;
+    document.getElementById('examTitle').textContent=current.title;
+    document.getElementById('bubble').textContent='Ready when you are. Hit Play and I’ll walk your images.';
+    document.getElementById('summary').innerHTML='';
+    document.getElementById('steps').innerHTML=reviewData.map((r,i)=>
+      `<div class="step" id="st${i}"><div class="field">${r.label}</div><div class="body">
+        <span class="vbadge v-${r.verdict}">${r.verdict}</span>
+        <div class="choice" id="ch${i}"></div>
+        <div class="comment" id="co${i}"></div></div></div>`).join('');
+    const t=GhostReplay.selfTest();
+    document.getElementById('foot').textContent='ghost-replay.js self-test: '+(t.pass?'PASS ✓':'FAIL');
+  }
+
+  function reveal(i){
+    const step=current.steps[i], r=reviewData[i];
+    document.getElementById('st'+i).classList.add('shown');
+    document.getElementById('ch'+i).textContent='You: '+step.chosen+(r.verdict!=='good'?('  ·  standard: '+step.correct):'');
+    document.getElementById('co'+i).textContent=r.comment;
+    document.getElementById('bubble').textContent=r.comment;
+  }
+  function stepNext(){
+    if(!current) loadCase();
+    if(idx>=reviewData.length){ showSummary(); return; }
+    reveal(idx++); if(idx>=reviewData.length) showSummary();
+  }
+  function play(){
+    if(!current) loadCase(); idx=0;
+    document.querySelectorAll('.step').forEach(s=>s.classList.remove('shown'));
+    document.getElementById('summary').innerHTML='';
+    clearInterval(timer);
+    timer=setInterval(()=>{ if(idx>=reviewData.length){clearInterval(timer);showSummary();return;} reveal(idx++); },1400);
+  }
+  function showSummary(){
+    const s=GhostReplay.summary(reviewData);
+    const col=s.score>=90?'var(--ok)':s.score>=70?'var(--close)':'var(--bad)';
+    document.getElementById('bubble').textContent=s.headline;
+    document.getElementById('summary').innerHTML=
+      `<div class="card"><div class="scorebig" style="color:${col}">${s.score}%</div>
+       <div style="color:var(--mut)">${s.hits} correct · ${s.close} close · ${s.misses} to fix — ${s.headline}</div></div>`;
+  }
+  loadCase();
+</script>
+</body>
+</html>

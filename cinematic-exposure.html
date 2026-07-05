@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Cinematic Exposure (Roadmap #8)</title>
+<style>
+  :root{--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:#05070d;color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;
+       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;overflow:hidden}
+  .room{position:relative;width:min(560px,94vw);height:min(560px,80vh);border-radius:16px;overflow:hidden;
+        background:radial-gradient(120% 90% at 50% 0%,#1b2740,#0a0f1a 70%);border:1px solid #22304a}
+  .dim{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .6s;z-index:3}
+  .patient{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);width:64%;z-index:2;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))}
+  .cone{position:absolute;left:50%;top:-4%;transform:translateX(-50%);width:0;height:0;
+        border-left:0 solid transparent;border-right:0 solid transparent;border-top:0 solid rgba(255,244,200,0);
+        z-index:4;transition:opacity .2s;opacity:0;
+        filter:blur(2px)}
+  .marker{position:absolute;left:66%;bottom:44%;width:20px;height:20px;border-radius:3px;border:2px solid #cfe4ff;color:#cfe4ff;
+          font:700 12px monospace;display:flex;align-items:center;justify-content:center;z-index:5;opacity:.5}
+  .marker.glint{animation:glint .5s ease}
+  @keyframes glint{0%,100%{box-shadow:0 0 0 rgba(255,255,255,0)}40%{box-shadow:0 0 18px 4px #fff;color:#fff}}
+  .flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:8;pointer-events:none}
+  .monitor{width:min(420px,90vw);background:#0b1120;border:1px solid #22304a;border-radius:14px;padding:12px}
+  .monitor .scr{position:relative;width:100%;aspect-ratio:3/4;background:#05070d;border-radius:8px;overflow:hidden}
+  .film{position:absolute;inset:0;opacity:0}
+  .wipe{position:absolute;inset:0;background:linear-gradient(180deg,rgba(56,189,248,.0),rgba(56,189,248,.25));
+        transform:translateY(-100%);z-index:2;pointer-events:none}
+  .cap{font-size:11px;color:var(--mut);text-align:center;margin-top:8px}
+  button{background:var(--cy);color:#04121f;border:none;border-radius:10px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer}
+  h1{font-size:16px;margin:0} .sub{color:var(--mut);font-size:12px;margin:-8px 0 2px}
+</style>
+</head>
+<body>
+  <h1>Cinematic Exposure</h1>
+  <div class="sub">Press Expose — lights dim, collimator snaps on, marker glints, beam flash, film develops.</div>
+  <div class="room" id="room">
+    <div class="cone" id="cone"></div>
+    <svg class="patient" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="100" cy="120" rx="80" ry="18" fill="#0a0f1a"/>
+      <g fill="#e7c9a8" stroke="#caa982" stroke-width="1">
+        <rect x="70" y="40" width="60" height="70" rx="26"/>
+        <rect x="74" y="14" width="12" height="34" rx="6"/><rect x="90" y="8" width="12" height="40" rx="6"/>
+        <rect x="106" y="10" width="12" height="38" rx="6"/><rect x="121" y="18" width="11" height="32" rx="6"/>
+        <rect x="58" y="52" width="20" height="12" rx="6"/>
+      </g>
+    </svg>
+    <div class="marker" id="marker">R</div>
+    <div class="dim" id="dim"></div>
+    <div class="flash" id="flash"></div>
+  </div>
+
+  <div class="monitor">
+    <div class="scr">
+      <svg class="film" id="film" viewBox="0 0 200 260" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f8ff"/><stop offset="1" stop-color="#b9c6db"/></linearGradient></defs>
+        <rect width="200" height="260" fill="#0a1524"/>
+        <g fill="url(#bone)" stroke="#dfe8f5" stroke-width="0.6">
+          <rect x="58" y="70" width="12" height="60" rx="5"/><rect x="80" y="60" width="11" height="70" rx="5"/>
+          <rect x="101" y="64" width="11" height="66" rx="5"/><rect x="121" y="72" width="10" height="58" rx="5"/>
+          <rect x="60" y="34" width="11" height="34" rx="5"/><rect x="81" y="22" width="10" height="36" rx="5"/>
+          <rect x="102" y="26" width="10" height="36" rx="5"/><rect x="122" y="40" width="9" height="30" rx="5"/>
+          <path d="M55 130 Q95 150 135 130 L128 175 Q95 190 62 175 Z"/>
+        </g>
+        <text x="150" y="30" fill="#cfe4ff" font-family="monospace" font-size="14" font-weight="700">R</text>
+      </svg>
+      <div class="wipe" id="wipe"></div>
+    </div>
+    <div class="cap" id="cap">Ready</div>
+  </div>
+
+  <button onclick="expose()">Expose</button>
+
+<script>
+  const cone=document.getElementById('cone'), dim=document.getElementById('dim'), flash=document.getElementById('flash'),
+        marker=document.getElementById('marker'), film=document.getElementById('film'), wipe=document.getElementById('wipe'), cap=document.getElementById('cap');
+  let busy=false;
+  function coneOn(on){
+    if(on){ cone.style.opacity='0.9'; cone.style.borderLeft='120px solid transparent'; cone.style.borderRight='120px solid transparent';
+            cone.style.borderTop='360px solid rgba(255,244,200,0.16)'; }
+    else { cone.style.opacity='0'; }
+  }
+  function expose(){
+    if(busy) return; busy=true;
+    // reset film
+    film.style.transition='none'; film.style.opacity='0'; wipe.style.transition='none'; wipe.style.transform='translateY(-100%)';
+    cap.textContent='Positioning…';
+    // 1) dim the room
+    dim.style.opacity='0.55';
+    setTimeout(()=>{ cap.textContent='Collimator light on'; coneOn(true); },500);
+    // 2) marker glint
+    setTimeout(()=>{ marker.classList.add('glint'); },1100);
+    // 3) beam flash + exposure
+    setTimeout(()=>{
+      cap.textContent='Exposing…';
+      flash.style.transition='opacity .06s'; flash.style.opacity='0.85';
+      setTimeout(()=>{ flash.style.transition='opacity .3s'; flash.style.opacity='0'; },70);
+    },1600);
+    // 4) lights back up, film develops with a scan wipe
+    setTimeout(()=>{
+      coneOn(false); marker.classList.remove('glint'); dim.style.opacity='0';
+      cap.textContent='Developing…';
+      film.style.transition='opacity 1.2s ease'; film.style.opacity='1';
+      wipe.style.transition='transform 1.1s ease'; wipe.style.transform='translateY(100%)';
+    },1850);
+    setTimeout(()=>{ cap.textContent='Diagnostic image ready'; busy=false; },3200);
+  }
+</script>
+</body>
+</html>

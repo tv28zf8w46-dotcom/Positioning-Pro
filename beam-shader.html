@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Volumetric Beam (Roadmap #3)</title>
+<style>
+  :root{--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;--panel:rgba(19,28,46,.9);--line:#22304a;}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05070d;color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  #app{position:fixed;inset:0}
+  .ctrls{position:absolute;top:14px;right:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;backdrop-filter:blur(8px);width:220px}
+  .ctrls h2{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 6px}
+  label{display:block;font-size:11px;color:var(--mut);margin:10px 0 3px;text-transform:uppercase}
+  label .v{float:right;color:var(--cy)} input[type=range]{width:100%}
+  .seg{display:flex;gap:6px;margin-top:6px}
+  .seg button{flex:1;background:#0e1626;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px;cursor:pointer;font-size:12px}
+  .seg button.on{background:var(--cy);color:#04121f;border-color:var(--cy);font-weight:600}
+  .hud{position:absolute;top:14px;left:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 15px;backdrop-filter:blur(8px)}
+  .hud h1{font-size:14px;margin:0 0 4px} .hud p{margin:0;color:var(--mut);font-size:12px;max-width:230px}
+  .help{position:absolute;bottom:12px;left:14px;color:var(--mut);font-size:11px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud"><h1>Volumetric X-Ray Beam</h1><p>Shader-rendered cone from tube to detector — animated scanlines, edge falloff, collimation borders. Turns green when the field is within limits.</p></div>
+<div class="ctrls">
+  <h2>Collimation</h2>
+  <label>Field size <span class="v" id="fV"></span></label>
+  <input id="field" type="range" min="0.14" max="0.62" step="0.01" value="0.34">
+  <label>Beam intensity <span class="v" id="iV"></span></label>
+  <input id="inten" type="range" min="0.3" max="2.0" step="0.05" value="1.0">
+  <h2 style="margin-top:14px">Grade</h2>
+  <div class="seg"><button id="gAuto" class="on" onclick="setGrade('auto')">Auto</button><button onclick="setGrade('ok')">OK</button><button onclick="setGrade('bad')">Clipped</button></div>
+</div>
+<div class="help">Drag to orbit. Field ≤ detector edge = collimated (green). Too wide = overexposed field (red).</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const mount=document.getElementById('app');
+  if(typeof THREE==='undefined'){ mount.innerHTML='<div style="padding:40px">Could not load Three.js (needs internet).</div>'; return; }
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight); mount.appendChild(renderer.domElement);
+  const scene=new THREE.Scene(); scene.background=new THREE.Color(0x06080f);
+  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,0.1,100); camera.position.set(2.4,1.6,3.0);
+  scene.add(new THREE.HemisphereLight(0x8fa8cc,0x05070d,0.6));
+  const dl=new THREE.DirectionalLight(0xffffff,0.5); dl.position.set(3,6,4); scene.add(dl);
+
+  // tube head + detector
+  const tubeY=2.2, detY=-0.2;
+  const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.4,20), new THREE.MeshStandardMaterial({color:0x8595b4,metalness:0.6,roughness:0.4}));
+  tube.rotation.z=Math.PI/2; tube.position.set(0,tubeY,0); scene.add(tube);
+  const detector=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4), new THREE.MeshStandardMaterial({color:0x0e2233,metalness:0.2,roughness:0.7,side:THREE.DoubleSide}));
+  detector.rotation.x=-Math.PI/2; detector.position.set(0,detY,0); scene.add(detector);
+  // detector active-area outline (limit)
+  const detEdge=0.55;
+  const edge=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-detEdge,0.001,-detEdge),new THREE.Vector3(detEdge,0.001,-detEdge),
+    new THREE.Vector3(detEdge,0.001,detEdge),new THREE.Vector3(-detEdge,0.001,detEdge)]),
+    new THREE.LineBasicMaterial({color:0x334155})); edge.position.y=detY; scene.add(edge);
+
+  // collimated field rectangle on the detector
+  const fieldMat=new THREE.LineBasicMaterial({color:0x6ee7b7});
+  const field=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()]), fieldMat);
+  field.position.y=detY+0.002; scene.add(field);
+
+  // ---- volumetric beam (shader cone) ----
+  const uniforms={ uTime:{value:0}, uColor:{value:new THREE.Color(0x6ee7b7)}, uIntensity:{value:1.0} };
+  const beamMat=new THREE.ShaderMaterial({
+    uniforms, transparent:true, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending,
+    vertexShader:`
+      varying vec3 vN; varying vec3 vView; varying vec3 vW;
+      void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz;
+        vN=normalize(mat3(modelMatrix)*normal); vView=normalize(cameraPosition-w.xyz);
+        gl_Position=projectionMatrix*viewMatrix*w; }`,
+    fragmentShader:`
+      precision mediump float; uniform float uTime; uniform vec3 uColor; uniform float uIntensity;
+      varying vec3 vN; varying vec3 vView; varying vec3 vW;
+      void main(){
+        float fres=pow(1.0-abs(dot(normalize(vN),normalize(vView))),1.8);   // glow at grazing edges
+        float scan=0.5+0.5*sin(vW.y*42.0 - uTime*3.0);                       // travelling scanlines
+        float axial=smoothstep(-0.3,2.2,vW.y);                               // fade near source
+        float a=fres*(0.35+0.4*scan)*uIntensity*(0.5+0.5*axial);
+        gl_FragColor=vec4(uColor,a);
+      }`
+  });
+  const beam=new THREE.Mesh(new THREE.ConeGeometry(0.5,tubeY-detY,48,1,true), beamMat);
+  scene.add(beam);
+  // faint dust motes in the beam
+  const dustGeo=new THREE.BufferGeometry(); const N=140, pos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){ pos[i*3]=(Math.random()-0.5)*0.8; pos[i*3+1]=Math.random()*(tubeY-detY)+detY; pos[i*3+2]=(Math.random()-0.5)*0.8; }
+  dustGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const dust=new THREE.Points(dustGeo,new THREE.PointsMaterial({color:0xbfe9ff,size:0.015,transparent:true,opacity:0.4})); scene.add(dust);
+
+  let grade='auto';
+  function setField(){
+    const half=parseFloat(document.getElementById('field').value);
+    // cone base radius so beam footprint == field at detector
+    const coneScale=half/0.5; beam.scale.set(coneScale,1,coneScale);
+    beam.position.set(0,(tubeY+detY)/2,0);
+    // field rectangle
+    const y=0;
+    field.geometry.setFromPoints([new THREE.Vector3(-half,y,-half),new THREE.Vector3(half,y,-half),new THREE.Vector3(half,y,half),new THREE.Vector3(-half,y,half)]);
+    field.geometry.attributes.position.needsUpdate=true;
+    const within=half<=detEdge;
+    const col = grade==='auto' ? (within?0x6ee7b7:0xfb7185) : (grade==='ok'?0x6ee7b7:0xfb7185);
+    uniforms.uColor.value.setHex(col); fieldMat.color.setHex(col);
+    document.getElementById('fV').textContent=Math.round(half/detEdge*100)+'% of IR'+(within?'':' · over edge');
+  }
+  window.setGrade=function(g){ grade=g; document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on')); (g==='auto'?document.getElementById('gAuto'):event.target).classList.add('on'); setField(); };
+  document.getElementById('field').addEventListener('input',setField);
+  document.getElementById('inten').addEventListener('input',e=>{ uniforms.uIntensity.value=parseFloat(e.target.value); document.getElementById('iV').textContent=e.target.value; });
+  document.getElementById('iV').textContent='1.00';
+
+  // orbit
+  const tgt=new THREE.Vector3(0,0.9,0); let az=Math.atan2(camera.position.z,camera.position.x),pol=1.0,rad=camera.position.distanceTo(tgt),drag=false,lx,ly;
+  function cam(){ pol=Math.max(0.2,Math.min(1.45,pol)); rad=Math.max(1.8,Math.min(9,rad));
+    camera.position.set(tgt.x+rad*Math.sin(pol)*Math.cos(az),tgt.y+rad*Math.cos(pol),tgt.z+rad*Math.sin(pol)*Math.sin(az)); camera.lookAt(tgt); }
+  cam(); const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>drag=false);
+  el.addEventListener('pointermove',e=>{if(!drag)return;az-=(e.clientX-lx)*0.008;pol-=(e.clientY-ly)*0.008;lx=e.clientX;ly=e.clientY;cam();});
+  el.addEventListener('wheel',e=>{e.preventDefault();rad*=(1+Math.sign(e.deltaY)*0.08);cam();},{passive:false});
+
+  addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+  const clock=new THREE.Clock();
+  (function loop(){ requestAnimationFrame(loop); const t=clock.getElapsedTime(); uniforms.uTime.value=t;
+    // drift dust down the beam
+    const p=dust.geometry.attributes.position.array;
+    for(let i=0;i<N;i++){ p[i*3+1]-=0.0016; if(p[i*3+1]<detY) p[i*3+1]=tubeY; }
+    dust.geometry.attributes.position.needsUpdate=true;
+    renderer.render(scene,camera); })();
+  setField();
+})();
+</script>
+</body>
+</html>

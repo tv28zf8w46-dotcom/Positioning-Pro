@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Design System (Roadmap #11)</title>
+<link rel="stylesheet" href="design-tokens.css">
+<style>
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);padding:var(--s-6);line-height:var(--lh-base)}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:var(--fs-2xl);margin:0 0 var(--s-1)} .sub{color:var(--mut);margin:0 0 var(--s-6)}
+  h2{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:var(--s-6) 0 var(--s-3)}
+  .row{display:flex;gap:var(--s-3);flex-wrap:wrap;align-items:flex-end}
+  .swatch{width:96px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line)}
+  .swatch .chip{height:56px} .swatch .lab{font-size:var(--fs-xs);padding:6px 8px;background:var(--surface-1);color:var(--mut)}
+  .scaleRow{display:flex;align-items:baseline;gap:var(--s-4);margin-bottom:var(--s-2)}
+  .scaleRow .tag{width:64px;color:var(--mut);font-size:var(--fs-xs);font-family:var(--font-mono)}
+  .space{background:var(--accent-gradient);height:16px;border-radius:4px}
+  .radii{display:flex;gap:var(--s-4)}
+  .radbox{width:88px;height:64px;background:var(--surface-1);border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:var(--fs-xs)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s-3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Positioning Pro — Design System</h1>
+  <p class="sub">Living reference for <code>design-tokens.css</code>. Slate + cyan, 8-pt spacing, a minor-third type scale, three radii, one accent gradient.</p>
+
+  <h2>Accent gradient</h2>
+  <div style="height:60px;border-radius:var(--r-md);background:var(--accent-gradient)"></div>
+
+  <h2>Color</h2>
+  <div class="row" id="colors"></div>
+
+  <h2>Semantic</h2>
+  <div class="row">
+    <span class="pp-pill pp-pill--ok">mastered</span>
+    <span class="pp-pill pp-pill--info">reviewing</span>
+    <span class="pp-pill pp-pill--warn">learning</span>
+    <span class="pp-pill pp-pill--bad">repeat</span>
+  </div>
+
+  <h2>Type scale</h2>
+  <div id="type"></div>
+
+  <h2>Spacing (8-pt)</h2>
+  <div id="space"></div>
+
+  <h2>Radius — only three</h2>
+  <div class="radii">
+    <div class="radbox" style="border-radius:var(--r-sm)">--r-sm 8</div>
+    <div class="radbox" style="border-radius:var(--r-md)">--r-md 12</div>
+    <div class="radbox" style="border-radius:var(--r-full)">--r-full</div>
+  </div>
+
+  <h2>Components</h2>
+  <div class="grid">
+    <div class="pp-card">
+      <div class="pp-label">Card</div>
+      <p style="color:var(--mut);font-size:var(--fs-sm);margin:var(--s-2) 0 var(--s-3)">Panel surface with hairline + elevation.</p>
+      <button class="pp-btn pp-btn--primary">Primary</button>
+      <button class="pp-btn">Secondary</button>
+    </div>
+    <div class="pp-card">
+      <div class="pp-label">Inputs</div>
+      <div style="margin-top:var(--s-2);display:flex;flex-direction:column;gap:var(--s-2)">
+        <input class="pp-input" placeholder="kVp">
+        <input class="pp-input" placeholder="mAs">
+      </div>
+    </div>
+    <div class="pp-card">
+      <div class="pp-label">Pills</div>
+      <div style="margin-top:var(--s-2);display:flex;gap:6px;flex-wrap:wrap">
+        <span class="pp-pill pp-pill--ok">ok</span><span class="pp-pill pp-pill--warn">warn</span><span class="pp-pill pp-pill--bad">bad</span><span class="pp-pill pp-pill--info">info</span>
+      </div>
+    </div>
+  </div>
+  <p class="sub" style="margin-top:var(--s-6)">Adopt in the app: <code>&lt;link rel="stylesheet" href="design-tokens.css"&gt;</code>, then replace ad-hoc hex/radius with <code>var(--…)</code>.</p>
+</div>
+<script>
+  const colors=[['--bg','bg'],['--surface-1','surface-1'],['--surface-2','surface-2'],['--line','line'],['--line-strong','line-strong'],['--ink','ink'],['--mut','mut'],['--brand-1','brand-1'],['--brand-2','brand-2']];
+  document.getElementById('colors').innerHTML=colors.map(([v,n])=>`<div class="swatch"><div class="chip" style="background:var(${v})"></div><div class="lab">${n}<br>${v}</div></div>`).join('');
+  const type=[['--fs-2xl','2xl'],['--fs-xl','xl'],['--fs-lg','lg'],['--fs-md','md'],['--fs-base','base'],['--fs-sm','sm'],['--fs-xs','xs']];
+  document.getElementById('type').innerHTML=type.map(([v,n])=>`<div class="scaleRow"><span class="tag">${n}</span><span style="font-size:var(${v})">Position with confidence</span></div>`).join('');
+  const space=[['--s-1','1·4'],['--s-2','2·8'],['--s-3','3·12'],['--s-4','4·16'],['--s-5','5·24'],['--s-6','6·32'],['--s-7','7·48'],['--s-8','8·64']];
+  document.getElementById('space').innerHTML=space.map(([v,n])=>`<div class="scaleRow"><span class="tag">${n}</span><div class="space" style="width:var(${v})"></div></div>`).join('');
+</script>
+</body>
+</html>

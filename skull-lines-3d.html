@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Skull Positioning Lines (Roadmap #9)</title>
+<style>
+  :root{--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;--ok:#34d399;--bad:#fb7185;--panel:rgba(19,28,46,.92);--line:#22304a;}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05070d;color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  #app{position:fixed;inset:0}
+  .hud{position:absolute;top:14px;left:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;backdrop-filter:blur(8px);min-width:250px;max-width:270px}
+  .hud h1{font-size:14px;margin:0 0 8px}
+  .task{font-size:13px;background:#0e1626;border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-bottom:8px}
+  .task b{color:var(--cy)}
+  .read{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums;padding:3px 0;font-size:13px}
+  .read b{color:var(--cy)} .read.ok b{color:var(--ok)} .read.bad b{color:var(--bad)}
+  .verdict{margin-top:8px;font-weight:700;text-align:center;padding:7px;border-radius:8px}
+  .verdict.ok{background:#34d39922;color:var(--ok)} .verdict.bad{background:#fb718522;color:var(--bad)}
+  .ctrls{position:absolute;top:14px;right:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;backdrop-filter:blur(8px);width:224px}
+  .ctrls h2{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 8px}
+  label{display:block;font-size:11px;color:var(--mut);margin:9px 0 3px;text-transform:uppercase;letter-spacing:.03em}
+  label .v{float:right;color:var(--cy)}
+  input[type=range]{width:100%}
+  .seg{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+  .seg button{flex:1 0 30%;background:#0e1626;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 4px;cursor:pointer;font-size:12px}
+  .seg button.on{background:var(--cy);color:#04121f;border-color:var(--cy);font-weight:600}
+  .newbtn{width:100%;margin-top:12px;background:var(--cy);color:#04121f;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer}
+  .reset{width:100%;margin-top:6px;background:#0e1626;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px;cursor:pointer;font-size:12px}
+  .help{position:absolute;bottom:12px;left:14px;color:var(--mut);font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;max-width:340px}
+  .legend{position:absolute;bottom:12px;right:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12px;line-height:1.7}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud">
+  <h1>Skull Positioning Lines</h1>
+  <div class="task" id="task">—</div>
+  <div class="read"><span id="refName">Reference ↔ IR</span><b id="cur">—</b></div>
+  <div class="read"><span>Target</span><b id="tgt">—</b></div>
+  <div class="read"><span>Off by</span><b id="off">—</b></div>
+  <div class="verdict bad" id="verdict">Adjust the skull…</div>
+</div>
+<div class="ctrls">
+  <h2>Reference</h2>
+  <div class="seg" id="refSeg">
+    <button data-r="OML" class="on">OML</button>
+    <button data-r="IOML">IOML</button>
+    <button data-r="GAL">GAL</button>
+    <button data-r="MSP">MSP</button>
+    <button data-r="IPL">IPL</button>
+  </div>
+  <h2 style="margin-top:12px">Image receptor</h2>
+  <div class="seg"><button data-ir="table" class="on">Table</button><button data-ir="upright">Upright</button></div>
+  <label>Flexion / extension (pitch) <span class="v" id="pV">0°</span></label>
+  <input id="pitch" type="range" min="-60" max="60" step="1" value="0">
+  <label>Rotation (yaw) <span class="v" id="yV">0°</span></label>
+  <input id="yaw" type="range" min="-90" max="90" step="1" value="0">
+  <label>Tilt (roll) <span class="v" id="rV">0°</span></label>
+  <input id="roll" type="range" min="-40" max="40" step="1" value="0">
+  <button class="newbtn" onclick="newTask()">New drill</button>
+  <button class="reset" onclick="resetPose()">Reset pose</button>
+</div>
+<div class="help">Drag up/down to flex/extend; sliders add rotation &amp; tilt. Sagittal lines (OML/IOML/GAL) respond to pitch; MSP &amp; IPL respond to rotation &amp; tilt.</div>
+<div class="legend">
+  <div><i style="background:#38bdf8"></i>OML &nbsp;<i style="background:#fbbf24"></i>IOML &nbsp;<i style="background:#a78bfa"></i>GAL</div>
+  <div><i style="background:#f472b6"></i>MSP (plane) &nbsp;<i style="background:#4ade80"></i>IPL</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const mount=document.getElementById('app');
+  if(typeof THREE==='undefined'){ mount.innerHTML='<div style="padding:40px">Could not load Three.js (needs internet).</div>'; return; }
+  const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight); mount.appendChild(renderer.domElement);
+  const scene=new THREE.Scene(); scene.background=new THREE.Color(0x0a0f1a); scene.fog=new THREE.Fog(0x0a0f1a,7,17);
+  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,0.1,100); camera.position.set(3.1,1.5,3.4);
+  scene.add(new THREE.HemisphereLight(0x9fb4d6,0x0a0f1a,0.75));
+  const dl=new THREE.DirectionalLight(0xffffff,0.7); dl.position.set(3,6,4); scene.add(dl);
+
+  // ---- image receptor ----
+  const irMat=new THREE.MeshStandardMaterial({color:0x0e7490,transparent:true,opacity:0.5,side:THREE.DoubleSide,metalness:0.2,roughness:0.6});
+  const ir=new THREE.Mesh(new THREE.PlaneGeometry(3,3),irMat); scene.add(ir);
+  const irNormArrow=new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,0),1.1,0x0ea5b7,0.16,0.09); scene.add(irNormArrow);
+  let irMode='table';
+  function setIR(mode){ irMode=mode;
+    if(mode==='table'){ ir.rotation.set(-Math.PI/2,0,0); ir.position.set(0,-1.4,0); irNormArrow.position.set(0,-1.4,0); irNormArrow.setDirection(new THREE.Vector3(0,1,0)); }
+    else { ir.rotation.set(0,0,0); ir.position.set(0,0.1,-1.5); irNormArrow.position.set(0,0.1,-1.5); irNormArrow.setDirection(new THREE.Vector3(0,0,1)); }
+    document.querySelectorAll('[data-ir]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-ir')===mode));
+  }
+  function irNormal(){ return irMode==='table'? new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1); }
+
+  // ---- skull (head faces +Z, up +Y, left-right +X) ----
+  const skull=new THREE.Group(); skull.rotation.order='YXZ';
+  const skin=new THREE.MeshStandardMaterial({color:0xdcc4a8,roughness:0.75,metalness:0.05});
+  const cran=new THREE.Mesh(new THREE.SphereGeometry(0.9,32,24),skin); cran.position.set(0,0.15,-0.05); cran.scale.set(0.95,1.05,1.05); skull.add(cran);
+  const face=new THREE.Mesh(new THREE.SphereGeometry(0.55,24,18),skin); face.position.set(0,-0.15,0.55); face.scale.set(0.9,1.0,0.7); skull.add(face);
+  const jaw=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.28,0.5),skin); jaw.position.set(0,-0.55,0.35); skull.add(jaw);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.28,12),skin); nose.rotation.x=Math.PI*0.35; nose.position.set(0,-0.18,1.0); skull.add(nose);
+  const eyeMat=new THREE.MeshStandardMaterial({color:0x22303f,roughness:0.4});
+  const eyeL=new THREE.Vector3(-0.28,0.12,0.86), eyeR=new THREE.Vector3(0.28,0.12,0.86);
+  [eyeL,eyeR].forEach(p=>{ const e=new THREE.Mesh(new THREE.SphereGeometry(0.11,16,12),eyeMat); e.position.copy(p); skull.add(e); });
+  scene.add(skull);
+
+  const LM={ eam:new THREE.Vector3(0,0,0), canthus:new THREE.Vector3(0,0.12,0.86), infraorbital:new THREE.Vector3(0,-0.02,0.9), glabella:new THREE.Vector3(0,0.42,0.72) };
+  // sagittal lines (from EAM to a facial landmark)
+  const SLINES={ OML:['canthus',0x38bdf8], IOML:['infraorbital',0xfbbf24], GAL:['glabella',0xa78bfa] };
+  const lineObjs={};
+  for(const name in SLINES){ const [lm,color]=SLINES[name];
+    const g=new THREE.BufferGeometry().setFromPoints([LM.eam,LM[lm]]);
+    const l=new THREE.Line(g,new THREE.LineBasicMaterial({color}));
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(0.05,12,10),new THREE.MeshBasicMaterial({color})); dot.position.copy(LM[lm]);
+    const grp=new THREE.Group(); grp.add(l,dot); skull.add(grp); lineObjs[name]={grp,line:l};
+  }
+  // IPL — interpupillary line (between the eyes, along X)
+  const ipl=new THREE.Line(new THREE.BufferGeometry().setFromPoints([eyeL,eyeR]),new THREE.LineBasicMaterial({color:0x4ade80}));
+  skull.add(ipl); lineObjs.IPL={grp:ipl,line:ipl};
+  // MSP — midsagittal plane (x=0 plane through the head)
+  const mspMat=new THREE.MeshBasicMaterial({color:0xf472b6,transparent:true,opacity:0.16,side:THREE.DoubleSide,depthWrite:false});
+  const msp=new THREE.Mesh(new THREE.PlaneGeometry(1.9,2.0),mspMat); msp.rotation.y=Math.PI/2; msp.position.set(0,0.05,0.05); skull.add(msp);
+  const mspEdge=new THREE.LineSegments(new THREE.EdgesGeometry(msp.geometry),new THREE.LineBasicMaterial({color:0xf472b6,transparent:true,opacity:0.5})); msp.add(mspEdge);
+  const eamDot=new THREE.Mesh(new THREE.SphereGeometry(0.05,12,10),new THREE.MeshBasicMaterial({color:0xffffff})); skull.add(eamDot);
+
+  // ---- pose ----
+  let pitch=0,yaw=0,roll=0,sel='OML';
+  const P=document.getElementById('pitch'),Y=document.getElementById('yaw'),Rr=document.getElementById('roll');
+  function applyPose(){ skull.rotation.set(pitch*Math.PI/180,yaw*Math.PI/180,roll*Math.PI/180);
+    document.getElementById('pV').textContent=Math.round(pitch)+'°'; document.getElementById('yV').textContent=Math.round(yaw)+'°'; document.getElementById('rV').textContent=Math.round(roll)+'°';
+    P.value=pitch;Y.value=yaw;Rr.value=roll; evaluate(); }
+  P.addEventListener('input',()=>{pitch=+P.value;applyPose();});
+  Y.addEventListener('input',()=>{yaw=+Y.value;applyPose();});
+  Rr.addEventListener('input',()=>{roll=+Rr.value;applyPose();});
+  let drag=false,ly=0; const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{drag=true;ly=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>drag=false);
+  el.addEventListener('pointermove',e=>{ if(!drag)return; pitch=Math.max(-60,Math.min(60,pitch+(e.clientY-ly)*0.4)); ly=e.clientY; applyPose(); });
+  window.resetPose=function(){ pitch=yaw=roll=0; applyPose(); };
+
+  document.querySelectorAll('[data-r]').forEach(b=>b.addEventListener('click',()=>{ sel=b.getAttribute('data-r'); document.querySelectorAll('[data-r]').forEach(x=>x.classList.toggle('on',x===b)); highlight(); evaluate(); }));
+  document.querySelectorAll('[data-ir]').forEach(b=>b.addEventListener('click',()=>{ setIR(b.getAttribute('data-ir')); evaluate(); }));
+  function highlight(){
+    ['OML','IOML','GAL'].forEach(n=>{ lineObjs[n].line.material.opacity=(n===sel)?1:0.3; lineObjs[n].line.material.transparent=true; });
+    lineObjs.IPL.line.material.opacity=(sel==='IPL')?1:0.4; lineObjs.IPL.line.material.transparent=true;
+    mspMat.opacity=(sel==='MSP')?0.28:0.10;
+  }
+
+  // ---- geometry helpers ----
+  function worldDirEEM(name){ const [lm]=SLINES[name];
+    const a=LM.eam.clone().applyMatrix4(skull.matrixWorld), b=LM[lm].clone().applyMatrix4(skull.matrixWorld); return b.sub(a).normalize(); }
+  function headAxisX(){ // world direction of the left-right axis (= IPL dir = MSP normal)
+    const o=new THREE.Vector3(0,0,0).applyMatrix4(skull.matrixWorld), x=new THREE.Vector3(1,0,0).applyMatrix4(skull.matrixWorld); return x.sub(o).normalize(); }
+  function angleLineToPlane(dir,n){ return 90-Math.acos(Math.min(1,Math.abs(dir.dot(n))))*180/Math.PI; } // 0=in plane, 90=perp
+  function anglePlaneToPlane(planeNormal,n){ return Math.acos(Math.min(1,Math.abs(planeNormal.dot(n))))*180/Math.PI; } // 0=parallel planes, 90=perp
+
+  const TOL=3;
+  // drills: {ref, rel, target, axisHint}
+  const DRILLS=[
+    {ref:'OML', rel:'perpendicular', axis:'pitch'}, {ref:'OML', rel:'parallel', axis:'pitch'},
+    {ref:'IOML', rel:'perpendicular', axis:'pitch'}, {ref:'IOML', rel:'parallel', axis:'pitch'},
+    {ref:'GAL', rel:'parallel', axis:'pitch'},
+    {ref:'MSP', rel:'perpendicular', axis:'yaw'},   // no-rotation AP/PA
+    {ref:'MSP', rel:'parallel', axis:'yaw'},        // true lateral
+    {ref:'IPL', rel:'parallel', axis:'roll'},       // no tilt (AP)
+    {ref:'IPL', rel:'perpendicular', axis:'roll'},  // lateral
+  ];
+  let task=DRILLS[0];
+  window.newTask=function(){
+    task=DRILLS[Math.floor(Math.random()*DRILLS.length)];
+    setIR(Math.random()<0.5?'table':'upright');
+    sel=task.ref; document.querySelectorAll('[data-r]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-r')===sel)); highlight();
+    const kind = (task.ref==='MSP')?'plane':'line';
+    document.getElementById('task').innerHTML=`Position so the <b>${task.ref}</b> ${kind==='plane'?'plane':'line'} is <b>${task.rel}</b> to the <b>${irMode==='table'?'table':'upright'}</b> receptor.`;
+    document.getElementById('refName').textContent=task.ref+' ↔ IR';
+    // seed an error on the relevant axis
+    pitch = task.axis==='pitch' ? (Math.random()*80-40) : 0;
+    yaw   = task.axis==='yaw'   ? (task.rel==='parallel'?60+Math.random()*25:(Math.random()*50-25)) : 0;
+    roll  = task.axis==='roll'  ? (task.rel==='perpendicular'?60+Math.random()*25:(Math.random()*40-20)) : 0;
+    applyPose();
+  };
+
+  function evaluate(){
+    skull.updateMatrixWorld(true);
+    const n=irNormal().normalize();
+    let cur, target;
+    if(task.ref==='MSP'){ cur=anglePlaneToPlane(headAxisX(),n); target=(task.rel==='parallel')?0:90; }
+    else { const dir = (task.ref==='IPL')?headAxisX():worldDirEEM(task.ref); cur=angleLineToPlane(dir,n); target=(task.rel==='parallel')?0:90; }
+    const off=Math.abs(cur-target), ok=(sel===task.ref)&&off<=TOL;
+    document.getElementById('cur').textContent=cur.toFixed(1)+'°';
+    document.getElementById('tgt').textContent=target+'° ('+task.rel+')';
+    const offEl=document.getElementById('off'); offEl.textContent=off.toFixed(1)+'°'; offEl.parentElement.className='read '+(ok?'ok':'bad');
+    document.getElementById('cur').parentElement.className='read '+(ok?'ok':'bad');
+    const v=document.getElementById('verdict');
+    if(sel!==task.ref){ v.className='verdict bad'; v.textContent='Select the '+task.ref+' reference'; }
+    else if(ok){ v.className='verdict ok'; v.textContent='✓ Aligned — nice'; }
+    else {
+      const hint = task.axis==='pitch'?(cur<target?'Extend':'Flex')+' the head'
+                 : task.axis==='yaw'?'Adjust rotation':'Adjust tilt';
+      v.className='verdict bad'; v.textContent=hint+' · '+off.toFixed(0)+'° off';
+    }
+    irMat.color.setHex(ok?0x34d399:0x0e7490);
+  }
+
+  addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+  camera.lookAt(0,0.1,0);
+  (function loop(){ requestAnimationFrame(loop); renderer.render(scene,camera); })();
+  setIR('table'); highlight(); newTask();
+})();
+</script>
+</body>
+</html>

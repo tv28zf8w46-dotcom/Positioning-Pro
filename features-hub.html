@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Feature Previews</title>
+<style>
+  :root{--bg:#0b1120;--panel:#131c2e;--line:#22304a;--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;--ok:#34d399;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(1000px 600px at 50% -10%,#12203a,#05070d);color:var(--ink);
+       font:14px/1.55 -apple-system,Segoe UI,Roboto,sans-serif;padding:32px 20px}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px} .sub{color:var(--mut);margin:0 0 24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:18px;transition:transform .1s,border-color .2s}
+  a.card:hover{transform:translateY(-3px);border-color:var(--cy)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;color:var(--cy);background:rgba(56,189,248,.12);border-radius:20px;padding:2px 10px;margin-bottom:10px}
+  .card h2{font-size:16px;margin:0 0 6px}
+  .card p{color:var(--mut);font-size:13px;margin:0}
+  .status{color:var(--ok);font-size:12px;margin-top:10px}
+  .sec{margin:28px 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+  .mods{font-size:13px;color:var(--mut)}
+  code{background:#0e1626;padding:1px 6px;border-radius:5px;color:var(--ink)}
+  .note{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:22px;color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Positioning Pro — Feature Previews</h1>
+  <p class="sub">Standalone prototypes built from the design roadmap. Each is self-contained; click to open. Logic modules ship with passing self-tests and drop into the app with a line or two.</p>
+
+  <div class="grid">
+    <a class="card" href="exam-room-3d.html">
+      <span class="tag">#1 · Flagship</span>
+      <h2>3D Exam Room — SID &amp; Detector</h2>
+      <p>Orbitable WebGL room. Pick the receptor (Tabletop / Table Bucky / Wall Bucky) and dial the SID in inches; the tube auto-orients (swings horizontal for wall) and centering/angle come from the 2D activity. Green when receptor + SID match the order.</p>
+    </a>
+    <a class="card" href="radiograph-sim-DEMO.html">
+      <span class="tag">#4 · Pedagogy</span>
+      <h2>Simulated Radiograph</h2>
+      <p>Renders the resulting film from your technique: under/over-exposure, low contrast, CR clipping, angle distortion — with a live fault list.</p>
+    </a>
+    <a class="card" href="control-console.html">
+      <span class="tag">#7 · Feel</span>
+      <h2>Generator Console</h2>
+      <p>Skeuomorphic panel: rotary kVp/mAs/mA/SID knobs, LED displays, APR presets, and a two-stage PREP→EXPOSE with Web-Audio capacitor whine.</p>
+    </a>
+    <a class="card" href="cinematic-exposure.html">
+      <span class="tag">#8 · Theater</span>
+      <h2>Cinematic Exposure</h2>
+      <p>Lights dim, collimator light snaps on, marker glints, beam flash, then the radiograph develops in on the wall monitor.</p>
+    </a>
+    <a class="card" href="arcade-practice-DEMO.html">
+      <span class="tag">#13 · #16 · #17</span>
+      <h2>Trauma Shift</h2>
+      <p>Timed shift with hospital requisition cards (patient, history, priority), streak/combo multipliers, edge glow and score popups.</p>
+    </a>
+    <a class="card" href="review-scheduler-DEMO.html">
+      <span class="tag">#19 · Retention</span>
+      <h2>Spaced-Repetition Review</h2>
+      <p>SM-2 scheduler: weak projections resurface sooner, mastered ones stretch out. Time-travel through days and watch the due queue + skill map.</p>
+    </a>
+    <a class="card" href="skull-lines-3d.html">
+      <span class="tag">#9 · Hardest to teach</span>
+      <h2>Skull Positioning Lines</h2>
+      <p>Pitch, rotate &amp; tilt a 3D skull to align OML / IOML / GAL (sagittal lines) plus the MSP plane and IPL to the receptor. Live angle readout + pass check — near-impossible to grasp from a textbook.</p>
+    </a>
+    <a class="card" href="progress-constellation.html">
+      <span class="tag">#14 · Progress</span>
+      <h2>Progress Constellation</h2>
+      <p>A skill skeleton instead of a stats table: each region glows by mastery. Click to drill into a region's projections. Driven by the review scheduler.</p>
+    </a>
+    <a class="card" href="ghost-replay-preview.html">
+      <span class="tag">#18 · Feedback</span>
+      <h2>Attending Review</h2>
+      <p>Replays a SIM step-by-step with an attending radiologist explaining each call and its radiographic consequence, then a scored verdict.</p>
+    </a>
+    <a class="card" href="feedback-fx-preview.html">
+      <span class="tag">#10 · Feel</span>
+      <h2>Sound &amp; Haptics</h2>
+      <p>Web-Audio tones and vibration patterns for correct / wrong / milestone / knob / expose events. Drops into any interaction with one call.</p>
+    </a>
+    <a class="card" href="beam-shader.html">
+      <span class="tag">#3 · Shader</span>
+      <h2>Volumetric Beam</h2>
+      <p>GLSL fragment-shader x-ray cone: travelling scanlines, fresnel edge falloff, drifting dust, collimation borders that turn green within limits.</p>
+    </a>
+    <a class="card" href="ar-mode.html">
+      <span class="tag">#5 · AR</span>
+      <h2>AR Mode</h2>
+      <p>WebXR immersive-AR when the device supports it; otherwise a camera + device-orientation overlay projects the tube/CR onto the real world.</p>
+    </a>
+    <a class="card" href="design-system.html">
+      <span class="tag">#11 · Identity</span>
+      <h2>Design System</h2>
+      <p>Living style guide for <code>design-tokens.css</code>: slate+cyan palette, 8-pt spacing, minor-third type scale, three radii, one accent gradient.</p>
+    </a>
+    <a class="card" href="view-transitions.html">
+      <span class="tag">#12 · Motion</span>
+      <h2>View Transitions</h2>
+      <p>picker → room → review morph via the View Transitions API with shared-element badges, and a clean fade fallback where unsupported.</p>
+    </a>
+    <a class="card" href="ambiance.html">
+      <span class="tag">#15 · Atmosphere</span>
+      <h2>Suite Ambiance</h2>
+      <p>Flickering wall viewboxes, safelight glow, dust drifting through the beam, reflective floor — depth with no performance cost. Pure CSS + canvas.</p>
+    </a>
+  </div>
+
+  <div class="sec">Reusable logic modules (drop-in, self-tested)</div>
+  <div class="mods">
+    <code>radiograph-sim.js</code> · <code>review-scheduler.js</code> · <code>streak-combo.js</code> · <code>requisition.js</code> · <code>ghost-replay.js</code> · <code>feedback-fx.js</code> · <code>design-tokens.css</code>
+  </div>
+
+  <div class="note">
+    These are prototypes kept <b>outside</b> your main <code>index.html</code>, so nothing here can break the live app. When you want one in the app,
+    the logic modules wire in with a line or two (e.g. <code>rs.record("Foot|AP", score)</code>); the 3D room and console are heavier and would replace
+    the current pseudo-3D room screen. Tell me which to integrate first.
+  </div>
+</div>
+</body>
+</html>

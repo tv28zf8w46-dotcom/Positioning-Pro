@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Progress Constellation (Roadmap #14)</title>
+<style>
+  :root{--bg:#0b1120;--panel:#131c2e;--line:#22304a;--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;
+        --new:#334155;--learn:#fbbf24;--review:#38bdf8;--master:#34d399;--bad:#fb7185;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(900px 600px at 30% -10%,#12203a,#05070d);color:var(--ink);
+       font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:24px}
+  .wrap{max-width:980px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 2px} .sub{color:var(--mut);margin:0 0 18px}
+  .layout{display:grid;grid-template-columns:420px 1fr;gap:20px;align-items:start}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  svg .region{cursor:pointer;transition:filter .2s,opacity .2s}
+  svg .region:hover{opacity:.9}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;color:var(--mut);font-size:12px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:-1px;margin-right:5px}
+  .controls{margin-bottom:14px}
+  button{background:#0e1626;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px;margin:0 6px 6px 0}
+  button:hover{border-color:var(--cy)}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:0 0 10px}
+  .projrow{display:flex;align-items:center;gap:10px;padding:7px 9px;background:#0e1626;border-radius:8px;margin-bottom:6px}
+  .projrow .nm{flex:1}
+  .pill{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600}
+  .m-new{background:#33415522;color:#94a3b8}.m-learning{background:#fbbf2422;color:var(--learn)}
+  .m-reviewing{background:#38bdf822;color:var(--review)}.m-mastered{background:#34d39922;color:var(--master)}
+  .bignum{font-size:34px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Progress Constellation</h1>
+  <p class="sub">A skill skeleton instead of a stats table — each region glows brighter as mastery grows. Click a region to drill in.</p>
+
+  <div class="controls panel" style="margin-bottom:16px">
+    <button onclick="sim('light')">Simulate a little practice</button>
+    <button onclick="sim('heavy')">Simulate lots of practice</button>
+    <button onclick="sim('reset')">Reset</button>
+    <span id="overall" style="margin-left:10px;color:var(--mut)"></span>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <svg id="body" viewBox="0 0 300 460" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="legend">
+        <span><span class="dot" style="background:#334155"></span>New</span>
+        <span><span class="dot" style="background:var(--learn)"></span>Learning</span>
+        <span><span class="dot" style="background:var(--review)"></span>Reviewing</span>
+        <span><span class="dot" style="background:var(--master)"></span>Mastered</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 id="drillTitle">Overall mastery</h2>
+      <div id="drill"></div>
+    </div>
+  </div>
+</div>
+
+<script src="review-scheduler.js"></script>
+<script>
+  const PROJ=[
+    {region:'Hand',view:'PA'},{region:'Hand',view:'Oblique'},{region:'Hand',view:'Fan Lateral'},
+    {region:'Wrist',view:'PA'},{region:'Wrist',view:'Oblique'},{region:'Wrist',view:'Lateral'},{region:'Wrist',view:'PA Ulnar Deviation'},
+    {region:'Elbow',view:'AP'},{region:'Elbow',view:'Internal Oblique'},{region:'Elbow',view:'External Oblique'},{region:'Elbow',view:'Lateral'},
+    {region:'Elbow',view:'Partial Flexion'},{region:'Elbow',view:'Partial Extension'},{region:'Elbow',view:'Radial Coyle'},{region:'Elbow',view:'Ulnar Coyle'},
+    {region:'Forearm',view:'AP'},{region:'Forearm',view:'Lateral'},{region:'Forearm',view:'PA'},{region:'Forearm',view:'Crosstable Lateral'},
+    {region:'Foot',view:'AP'},{region:'Foot',view:'Oblique'},{region:'Foot',view:'Lateral'},
+  ];
+  const IDS = PROJ.map(p=>p.region+'|'+p.view);
+  const masteryOf = ReviewSchedulerAPI.masteryOf;
+  const CM={new:'#334155',learning:'#fbbf24',reviewing:'#38bdf8',mastered:'#34d399'};
+  const SCORE={new:0,learning:1,reviewing:2,mastered:3};
+
+  // region hotspots on a simplified skeleton (x,y,r)
+  const HOT={
+    Hand:[70,250,16], Wrist:[78,215,13], Forearm:[92,180,14], Elbow:[104,145,14],
+    Foot:[130,430,17], Knee:[132,360,13], Shoulder:[120,110,13],
+  };
+  // right-arm mirror decorative points
+  const MIRROR={Hand:[230,250],Wrist:[222,215],Forearm:[208,180],Elbow:[196,145],Foot:[170,430]};
+
+  let clock=Date.UTC(2026,0,1);
+  let rs=ReviewScheduler({storage:mem(), now:()=>clock});
+  function mem(){let m={};return{getItem:k=>k in m?m[k]:null,setItem:(k,v)=>m[k]=String(v),removeItem:k=>{delete m[k]}};}
+
+  function regionMastery(region){
+    const ids=IDS.filter(id=>id.split('|')[0]===region);
+    if(!ids.length) return {avg:0,level:'new'};
+    const avg=ids.reduce((a,id)=>a+SCORE[rs.mastery(id)],0)/ids.length;
+    const level=avg>=2.4?'mastered':avg>=1.4?'reviewing':avg>=0.4?'learning':'new';
+    return {avg,level};
+  }
+
+  function drawBody(){
+    const s=[];
+    // spine + skull + limbs (schematic)
+    s.push('<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>');
+    s.push('<g stroke="#33425f" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5">'+
+      '<line x1="150" y1="70" x2="150" y2="300"/>'+            // spine
+      '<line x1="150" y1="110" x2="70" y2="250"/>'+           // left arm
+      '<line x1="150" y1="110" x2="230" y2="250"/>'+          // right arm
+      '<line x1="150" y1="300" x2="130" y2="430"/>'+          // left leg
+      '<line x1="150" y1="300" x2="170" y2="430"/>'+          // right leg
+      '<circle cx="150" cy="52" r="22"/></g>');
+    // mirror decorative (non-interactive) dim points
+    for(const k in MIRROR){ const [x,y]=MIRROR[k]; const lvl=regionMastery(k).level;
+      s.push(`<circle cx="${x}" cy="${y}" r="10" fill="${CM[lvl]}" opacity="0.35"/>`); }
+    // interactive hotspots (left side + axial)
+    for(const region in HOT){ const [x,y,r]=HOT[region];
+      const rm = HOT_REGION_HAS(region) ? regionMastery(region) : {level:'new'};
+      const has = IDS.some(id=>id.split('|')[0]===region);
+      const lvl=has?regionMastery(region).level:'new';
+      const glow = lvl==='mastered'||lvl==='reviewing';
+      s.push(`<circle class="region" data-r="${region}" cx="${x}" cy="${y}" r="${r}" fill="${CM[lvl]}" ${glow?'filter="url(#glow)"':''} opacity="${has?0.95:0.25}"/>`);
+      s.push(`<text x="${x}" y="${y+r+13}" text-anchor="middle" font-size="10" fill="#8fa3c0">${region}</text>`);
+    }
+    document.getElementById('body').innerHTML=s.join('');
+    document.querySelectorAll('#body .region').forEach(el=>el.addEventListener('click',()=>drill(el.getAttribute('data-r'))));
+  }
+  function HOT_REGION_HAS(region){ return IDS.some(id=>id.split('|')[0]===region); }
+
+  function drill(region){
+    document.getElementById('drillTitle').textContent=region+' — projections';
+    const ids=IDS.filter(id=>id.split('|')[0]===region);
+    if(!ids.length){ document.getElementById('drill').innerHTML='<p style="color:var(--mut)">No projections tracked for this region yet.</p>'; return; }
+    document.getElementById('drill').innerHTML=ids.map(id=>{
+      const m=rs.mastery(id); const r=rs.get(id);
+      const meta=r&&r.lastScore!=null?('last '+r.lastScore+'% · '+r.attempts+' attempts'):'never practiced';
+      return `<div class="projrow"><span class="nm">${id.split('|')[1]}</span><span style="color:var(--mut);font-size:12px">${meta}</span><span class="pill m-${m}">${m}</span></div>`;
+    }).join('');
+  }
+
+  function overall(){
+    const st=rs.stats({projections:IDS});
+    document.getElementById('overall').textContent=`Mastered ${st.byMastery.mastered}/${st.total} (${st.masteredPct}%) · avg ${st.avgLastScore==null?'—':st.avgLastScore+'%'}`;
+    document.getElementById('drillTitle').textContent='Overall mastery';
+    const b=st.byMastery;
+    document.getElementById('drill').innerHTML=
+      `<div class="bignum" style="color:var(--master)">${st.masteredPct}%</div>
+       <p style="color:var(--mut)">mastered across ${st.total} projections</p>
+       <div class="projrow"><span class="nm">Mastered</span><span class="pill m-mastered">${b.mastered}</span></div>
+       <div class="projrow"><span class="nm">Reviewing</span><span class="pill m-reviewing">${b.reviewing}</span></div>
+       <div class="projrow"><span class="nm">Learning</span><span class="pill m-learning">${b.learning}</span></div>
+       <div class="projrow"><span class="nm">New</span><span class="pill m-new">${b.new}</span></div>`;
+  }
+
+  window.sim=function(kind){
+    if(kind==='reset'){ rs=ReviewScheduler({storage:mem(),now:()=>clock}); render(); return; }
+    const rounds = kind==='heavy'?9:3;
+    for(let r=0;r<rounds;r++){
+      IDS.forEach(id=>{ if(Math.random()<(kind==='heavy'?0.85:0.5)){ const good=Math.random()<(kind==='heavy'?0.8:0.6); rs.record(id, good?85+Math.floor(Math.random()*15):40+Math.floor(Math.random()*25), clock); } });
+      clock += 2*86400000;
+    }
+    render();
+  };
+  function render(){ drawBody(); overall(); }
+  render();
+</script>
+</body>
+</html>

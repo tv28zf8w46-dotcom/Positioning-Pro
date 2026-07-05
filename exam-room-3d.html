@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — 3D Exam Room · SID & Bucky (Roadmap #1)</title>
+<style>
+  :root{--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;--ok:#34d399;--bad:#fb7185;--panel:rgba(19,28,46,.92);--line:#22304a;}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05070d;color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  #app{position:fixed;inset:0} canvas{display:block}
+  .hud{position:absolute;top:14px;left:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;backdrop-filter:blur(8px);min-width:250px;max-width:280px}
+  .hud h1{font-size:14px;margin:0 0 2px} .hud .sub{color:var(--mut);font-size:11px;margin-bottom:10px}
+  .routine{background:#0e1626;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+  .routine .rn{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .plist{list-style:none;margin:0;padding:0}
+  .plist li{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--mut)}
+  .plist li.cur{color:var(--ink);font-weight:700} .plist li .tick{color:var(--ok)}
+  .read{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums;padding:3px 0;font-size:13px}
+  .read b{color:var(--cy)} .read.ok b{color:var(--ok)} .read.bad b{color:var(--bad)}
+  .verdict{margin-top:8px;font-weight:700;text-align:center;padding:8px;border-radius:8px}
+  .verdict.ok{background:#34d39922;color:var(--ok)} .verdict.bad{background:#fb718522;color:var(--bad)}
+  .ctrls{position:absolute;top:14px;right:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;backdrop-filter:blur(8px);width:230px}
+  .ctrls h2{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 8px}
+  .seg{display:flex;flex-direction:column;gap:6px}
+  .seg button{background:#0e1626;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;font-size:12px;text-align:left}
+  .seg button.on{background:var(--cy);color:#04121f;border-color:var(--cy);font-weight:600}
+  label{display:block;font-size:11px;color:var(--mut);margin:12px 0 3px;text-transform:uppercase;letter-spacing:.03em}
+  label .v{float:right;color:var(--cy)} input[type=range]{width:100%}
+  .presets{display:flex;gap:6px;margin-top:6px}
+  .presets button{flex:1;background:#0e1626;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px;cursor:pointer;font-size:12px}
+  .presets button.on{background:var(--cy);color:#04121f;border-color:var(--cy);font-weight:700}
+  .rowbtns{display:flex;gap:6px;margin-top:14px}
+  .rowbtns button{flex:1;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer}
+  .nextb{background:var(--cy);color:#04121f} .newb{background:#0e1626;color:var(--ink);border:1px solid var(--line)!important}
+  .help{position:absolute;bottom:12px;left:14px;color:var(--mut);font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;max-width:380px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud">
+  <h1>Choose SID and Bucky</h1>
+  <div class="routine"><div class="rn" id="rname">—</div><ul class="plist" id="plist"></ul></div>
+  <div class="read"><span>SID</span><b id="sidHead">—</b></div>
+  <div class="read"><span>Receptor</span><b id="det">—</b></div>
+</div>
+<div class="ctrls">
+  <h2>Receptor</h2>
+  <div class="seg" id="detSeg">
+    <button data-d="nonbucky">Non-Bucky</button>
+    <button data-d="tablebucky">Table Bucky</button>
+    <button data-d="wall">Wall Bucky</button>
+  </div>
+  <label>SID <span class="v" id="sV">40 in</span></label>
+  <input id="sid" type="range" min="30" max="72" step="1" value="40">
+  <div class="presets"><button id="p40" onclick="setSID(40)">40 in</button><button id="p72" onclick="setSID(72)">72 in</button></div>
+  <div class="rowbtns"><button class="nextb" onclick="nextProj()">Next projection ▸</button><button class="newb" onclick="newRoutine()">New routine</button></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const mount=document.getElementById('app');
+  function fail(msg){ mount.innerHTML='<div style="padding:30px;max-width:520px;color:#fb7185;font:14px/1.6 -apple-system,sans-serif;position:relative;z-index:2">'
+      +'<b>3D room couldn\'t start.</b><br>'+msg+'<br><br><span style="color:#8fa3c0">Fixes: use Chrome or Edge, make sure hardware acceleration is on (Settings → System), and check your internet — the 3D engine loads from a CDN.</span></div>'; }
+  if(typeof THREE==='undefined'){ fail('Three.js did not load (no internet connection to the CDN, or it was blocked).'); return; }
+  try{
+  const IN=0.0254; // metres/inch — scene math in metres, ALL display in inches
+
+  const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight); mount.appendChild(renderer.domElement);
+  const scene=new THREE.Scene(); scene.background=new THREE.Color(0x0a0f1a); scene.fog=new THREE.Fog(0x0a0f1a,7,18);
+  const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,100); camera.position.set(3.6,2.3,4.3);
+  scene.add(new THREE.HemisphereLight(0x9fb4d6,0x0a0f1a,0.6));
+  const key=new THREE.DirectionalLight(0xffffff,0.7); key.position.set(4,7,3); scene.add(key);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(24,24),new THREE.MeshStandardMaterial({color:0x111a2b,roughness:0.85}));
+  floor.rotation.x=-Math.PI/2; scene.add(floor);
+  {const g=new THREE.GridHelper(24,48,0x1c2a40,0x152036); g.position.y=0.002; scene.add(g);}
+  const M=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?0.6:r,metalness:m==null?0.2:m});
+  const box=(w,h,d,mm)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mm);
+  const at=(o,x,y,z)=>{o.position.set(x,y,z); return o;};   // set position safely (Three position is read-only to assignment)
+  const IRC=0x0e7490;
+
+  // table
+  const TABLE_TOP_Y=0.86, TABLE_SURF=TABLE_TOP_Y+0.03;
+  scene.add(at(box(1.1,0.06,2.4,M(0x2e3c55,0.5,0.3)),0,TABLE_TOP_Y,0));
+  scene.add(at(box(0.5,TABLE_TOP_Y,0.9,M(0x1b2536,0.7,0.2)),0,TABLE_TOP_Y/2,0));
+  const detBucky=at(box(0.5,0.04,0.6,M(IRC,0.4,0.3)),0,TABLE_TOP_Y-0.06,0); scene.add(detBucky);   // table Bucky tray
+  // wall
+  const WALL_Z=-2.2, WALL_Y=1.35;
+  scene.add(at(box(0.14,2.4,0.14,M(0x1b2536,0.7,0.2)),0,1.2,WALL_Z-0.06));
+  scene.add(at(box(0.9,1.4,0.08,M(0x22304a,0.6,0.25)),0,WALL_Y,WALL_Z));
+  const detWall=at(box(0.52,0.62,0.03,M(IRC,0.4,0.3)),0,WALL_Y,WALL_Z+0.06); scene.add(detWall);      // wall Bucky IR
+  // movable Non-Bucky plate (table surface OR upright near wall)
+  const detNon=box(0.42,0.03,0.52,M(0x0ea5b7,0.4,0.3)); scene.add(detNon);
+
+  // rail + tube (beam -Y by default)
+  const RAIL_Y=3.0;
+  scene.add(at(box(0.09,0.08,3.0,M(0x33425f,0.5,0.5)),0,RAIL_Y,0));
+  const column=box(0.1,0.9,0.1,M(0x5a6f92,0.5,0.5)); scene.add(column);
+  const tube=new THREE.Group();
+  const housing=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.46,24),M(0x8595b4,0.4,0.6)); housing.rotation.z=Math.PI/2; tube.add(housing);
+  tube.add(at(box(0.24,0.2,0.24,M(0x2b3a54,0.4,0.5)),0,-0.2,0));
+  const focal=new THREE.Mesh(new THREE.SphereGeometry(0.02,12,12),new THREE.MeshBasicMaterial({color:0xffe08a})); focal.position.y=-0.3; tube.add(focal);
+  // volumetric x-ray beam (shader): fresnel edge glow + travelling scanlines (Roadmap #3 visual)
+  const beamUniforms={ uTime:{value:0}, uColor:{value:new THREE.Color(0x6ee7b7)} };
+  const beamMat=new THREE.ShaderMaterial({
+    uniforms:beamUniforms, transparent:true, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending,
+    vertexShader:`varying vec3 vN; varying vec3 vView; varying float vAxis;
+      void main(){ vec4 w=modelMatrix*vec4(position,1.0); vN=normalize(mat3(modelMatrix)*normal);
+        vView=normalize(cameraPosition-w.xyz); vAxis=position.y;
+        gl_Position=projectionMatrix*viewMatrix*w; }`,
+    fragmentShader:`precision mediump float; uniform float uTime; uniform vec3 uColor;
+      varying vec3 vN; varying vec3 vView; varying float vAxis;
+      void main(){ float fres=pow(1.0-abs(dot(normalize(vN),normalize(vView))),1.8);
+        float scan=0.5+0.5*sin(vAxis*40.0 - uTime*3.0);
+        float a=fres*(0.35+0.45*scan)*0.9;
+        gl_FragColor=vec4(uColor,a); }`
+  });
+  const beam=new THREE.Mesh(new THREE.ConeGeometry(0.4,1,40,1,true),beamMat); beam.position.y=-0.8; tube.add(beam);
+  scene.add(tube);
+
+  // ---- routines (persist settings across projections) ----
+  const ROUTINES=[
+    {name:'Hand Routine', proj:[
+      {n:'PA', bucky:'nonbucky', sid:40, loc:'table'},
+      {n:'Oblique', bucky:'nonbucky', sid:40, loc:'table'},
+      {n:'Fan Lateral', bucky:'nonbucky', sid:40, loc:'table'} ]},
+    {name:'Knee Routine', proj:[
+      {n:'AP', bucky:'tablebucky', sid:40, loc:'table'},
+      {n:'Lateral', bucky:'tablebucky', sid:40, loc:'table'} ]},
+    {name:'Chest Routine', proj:[
+      {n:'PA', bucky:'wall', sid:72, loc:'wall'},
+      {n:'Lateral', bucky:'wall', sid:72, loc:'wall'} ]},
+    {name:'Facial / Nasal Series', proj:[
+      {n:'Lateral Nasal Bones', bucky:'nonbucky', sid:40, loc:'wall'},   // non-Bucky, upright, IR holder pulled out
+      {n:'Waters (parietoacanthial)', bucky:'wall', sid:40, loc:'wall'} ]},
+  ];
+  const DET_NAMES={nonbucky:'Non-Bucky', tablebucky:'Table Bucky', wall:'Wall Bucky'};
+
+  // persistent equipment state (does NOT reset between projections/routines)
+  let detector='nonbucky', sidIn=40;
+  let routine=ROUTINES[0], pIndex=0, passed=[];
+
+  function curProj(){ return routine.proj[pIndex]; }
+
+  // where the receptor sits + beam orientation, given the student's choice + this projection
+  function irState(){
+    if(detector==='tablebucky') return {pt:new THREE.Vector3(0,TABLE_TOP_Y-0.06,0), horiz:false};
+    if(detector==='wall')       return {pt:new THREE.Vector3(0,WALL_Y,WALL_Z+0.06), horiz:true};
+    // non-Bucky: table or upright-at-wall per the projection's position (auto, like centering)
+    if(curProj().loc==='wall')  return {pt:new THREE.Vector3(0,WALL_Y,WALL_Z+0.34), horiz:true, nonWall:true};
+    return {pt:new THREE.Vector3(0,TABLE_SURF+0.02,0), horiz:false, nonTable:true};
+  }
+
+  function layout(){
+    const st=irState(), sidM=sidIn*IN;
+    // show/hide receptors
+    detBucky.visible = detector==='tablebucky';
+    detWall.visible  = detector==='wall';
+    detNon.visible   = detector==='nonbucky';
+    if(detector==='nonbucky'){
+      if(st.nonWall){ detNon.rotation.set(Math.PI/2,0,0); detNon.position.set(0,WALL_Y,WALL_Z+0.34); }
+      else { detNon.rotation.set(0,0,0); detNon.position.set(0,TABLE_SURF+0.02,0); }
+    }
+    if(st.horiz){
+      tube.rotation.set(Math.PI/2,0,0);                  // beam points -Z (toward the wall)
+      tube.position.set(0, st.pt.y, st.pt.z+sidM);
+      const colLen=RAIL_Y-st.pt.y; column.scale.y=colLen/0.9; column.position.set(0,RAIL_Y-colLen/2, st.pt.z+sidM);
+    } else {
+      tube.rotation.set(0,0,0);                          // beam down
+      let focalY=st.pt.y+sidM;
+      focalY=Math.max(TABLE_SURF+0.4, Math.min(RAIL_Y-0.35, focalY)); // never through the table
+      tube.position.set(0,focalY+0.3,0);
+      const colLen=RAIL_Y-(focalY+0.3); column.scale.y=Math.max(0.05,colLen)/0.9; column.position.set(0,RAIL_Y-colLen/2,0);
+    }
+    // beam length focal->IR
+    const fw=new THREE.Vector3(); focal.getWorldPosition(fw); const len=Math.max(0.3,fw.distanceTo(st.pt));
+    beam.scale.set(1,len,1); beam.position.y=-0.3-len/2;
+    grade();
+  }
+
+  function grade(){
+    // memorization drill: no correctness feedback — just reflect the current selections
+    document.getElementById('sV').textContent=Math.round(sidIn)+' in';
+    document.getElementById('p40').classList.toggle('on',sidIn===40);
+    document.getElementById('p72').classList.toggle('on',sidIn===72);
+    document.getElementById('sidHead').textContent=Math.round(sidIn)+' in';
+    document.getElementById('det').textContent=DET_NAMES[detector];
+    renderList();
+    document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-d')===detector));
+  }
+
+  function renderList(){
+    document.getElementById('rname').textContent=routine.name;
+    document.getElementById('plist').innerHTML=routine.proj.map((p,i)=>
+      `<li class="${i===pIndex?'cur':''}"><span>${p.n}</span></li>`).join('');
+  }
+
+  window.setSID=function(v){ sidIn=v; document.getElementById('sid').value=v; layout(); };
+  document.getElementById('sid').addEventListener('input',e=>{
+    let v=parseFloat(e.target.value);
+    if(Math.abs(v-40)<=3) v=40; else if(Math.abs(v-72)<=3) v=72;   // sticky at 40 & 72
+    sidIn=v; e.target.value=v; layout();
+  });
+  document.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',()=>{ detector=b.getAttribute('data-d'); layout(); }));
+  window.nextProj=function(){ pIndex=(pIndex+1)%routine.proj.length; layout(); };   // settings persist on purpose
+  window.newRoutine=function(){ routine=ROUTINES[Math.floor(Math.random()*ROUTINES.length)]; pIndex=0; passed=[]; layout(); }; // equipment left as-is
+
+  // orbit
+  const tgt=new THREE.Vector3(0,1.0,-0.4); let az=Math.atan2(camera.position.z-tgt.z,camera.position.x-tgt.x),pol=Math.acos((camera.position.y-tgt.y)/camera.position.distanceTo(tgt)),rad=camera.position.distanceTo(tgt),drag=false,lx,ly;
+  function cam(){ pol=Math.max(0.25,Math.min(1.5,pol)); rad=Math.max(2.4,Math.min(12,rad));
+    camera.position.set(tgt.x+rad*Math.sin(pol)*Math.cos(az),tgt.y+rad*Math.cos(pol),tgt.z+rad*Math.sin(pol)*Math.sin(az)); camera.lookAt(tgt); }
+  cam(); const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>drag=false);
+  el.addEventListener('pointermove',e=>{if(!drag)return;az-=(e.clientX-lx)*0.008;pol-=(e.clientY-ly)*0.008;lx=e.clientX;ly=e.clientY;cam();});
+  el.addEventListener('wheel',e=>{e.preventDefault();rad*=(1+Math.sign(e.deltaY)*0.08);cam();},{passive:false});
+  addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+  const clock=new THREE.Clock();
+  (function loop(){ requestAnimationFrame(loop); beamUniforms.uTime.value=clock.getElapsedTime(); renderer.render(scene,camera); })();
+  layout();
+  }catch(err){ fail('Error: '+(err&&err.message?err.message:err)); if(window.console)console.error(err); }
+})();
+</script>
+</body>
+</html>

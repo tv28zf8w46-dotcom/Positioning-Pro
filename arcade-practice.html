@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Trauma Shift (Roadmap #13 + #16 + #17)</title>
+<style>
+  :root{--bg:#0b1120;--panel:#131c2e;--line:#22304a;--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;--ok:#34d399;--bad:#fb7185;--amber:#fbbf24;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;
+       display:flex;flex-direction:column;align-items:center;padding:22px;position:relative;overflow-x:hidden}
+  #glow{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 rgba(251,191,36,0);transition:box-shadow .25s;z-index:5}
+  h1{font-size:17px;margin:0 0 2px} .sub{color:var(--mut);font-size:12px;margin-bottom:16px}
+  .top{display:flex;gap:14px;width:min(760px,96vw);margin-bottom:14px}
+  .stat{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center}
+  .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+  .stat .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  .combo .v{color:var(--amber)} .timer .v{color:var(--cy)}
+  .stage{width:min(760px,96vw);display:grid;grid-template-columns:1fr;gap:14px}
+  .reqhost{display:flex;justify-content:center}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  button{background:#0e1626;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600}
+  button:hover{border-color:var(--cy)}
+  .good{border-color:var(--ok);color:var(--ok)} .bad{border-color:var(--bad);color:var(--bad)}
+  .start{background:var(--cy);color:#04121f;border:none}
+  .popup{position:fixed;left:50%;top:38%;transform:translateX(-50%);font-size:34px;font-weight:900;pointer-events:none;z-index:20;
+    text-shadow:0 2px 20px rgba(0,0,0,.6);animation:pop 1s ease-out forwards}
+  @keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}20%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-60px) scale(1)}}
+  .tierlabel{position:fixed;top:70px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);z-index:20;opacity:0;transition:opacity .2s}
+  .foot{color:var(--mut);font-size:12px;margin-top:14px;text-align:center}
+  .end{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;width:min(760px,96vw)}
+</style>
+</head>
+<body>
+  <div id="glow"></div>
+  <div class="tierlabel" id="tier"></div>
+  <h1>Trauma Shift</h1>
+  <p class="sub">Orders arrive on the clock. Read the requisition, then position (mock). Chain correct answers for combo multipliers.</p>
+
+  <div class="top">
+    <div class="stat"><div class="k">Score</div><div class="v" id="score">0</div></div>
+    <div class="stat combo"><div class="k">Combo</div><div class="v" id="combo">×1</div></div>
+    <div class="stat"><div class="k">Streak / Best</div><div class="v" id="streak">0</div></div>
+    <div class="stat timer"><div class="k">Time</div><div class="v" id="time">60</div></div>
+  </div>
+
+  <div class="stage">
+    <div class="reqhost" id="reqhost"></div>
+    <div class="actions" id="actions">
+      <button class="start" onclick="startShift()">Start 60-second shift</button>
+    </div>
+  </div>
+  <div class="foot" id="foot">Powered by requisition.js + streak-combo.js — the same engines that plug into the live app.</div>
+
+<script src="requisition.js"></script>
+<script src="streak-combo.js"></script>
+<script>
+  const PROJ=[
+    {region:'Hand',view:'PA'},{region:'Hand',view:'Oblique'},{region:'Hand',view:'Fan Lateral'},
+    {region:'Wrist',view:'PA'},{region:'Wrist',view:'Oblique'},{region:'Wrist',view:'Lateral'},{region:'Wrist',view:'PA Ulnar Deviation'},
+    {region:'Elbow',view:'AP'},{region:'Elbow',view:'Lateral'},{region:'Elbow',view:'Radial Coyle'},{region:'Elbow',view:'Partial Flexion'},
+    {region:'Forearm',view:'AP'},{region:'Forearm',view:'Lateral'},{region:'Foot',view:'AP'},{region:'Foot',view:'Lateral'},
+  ];
+  // inject requisition styles
+  const st=document.createElement('style'); st.textContent=Requisition.CSS; document.head.appendChild(st);
+  const glowColors=['transparent','rgba(56,189,248,.25)','rgba(52,211,153,.3)','rgba(251,191,36,.4)','rgba(251,113,133,.5)'];
+
+  let eng=null, timeLeft=60, timer=null, current=null, askedAt=0, seedN=1, running=false;
+
+  function setGlow(level){ document.getElementById('glow').style.boxShadow='inset 0 0 120px '+glowColors[level]; }
+  function popup(text,color){ const d=document.createElement('div'); d.className='popup'; d.style.color=color||'#e6edf7'; d.textContent=text; document.body.appendChild(d); setTimeout(()=>d.remove(),1000); }
+  function tierFlash(label){ const t=document.getElementById('tier'); if(!label){t.style.opacity=0;return;} t.textContent=label; t.style.opacity=1; }
+
+  function nextOrder(){
+    current=PROJ[Math.floor(Math.random()*PROJ.length)];
+    const req=Requisition.generate({region:current.region,view:current.view,seed:seedN++});
+    document.getElementById('reqhost').innerHTML=Requisition.card(req);
+    // Build multiple-choice: the correct exam + 3 distractors
+    const opts=new Set([current.region+' — '+current.view]);
+    while(opts.size<4){ const p=PROJ[Math.floor(Math.random()*PROJ.length)]; opts.add(p.region+' — '+p.view); }
+    const shuffled=[...opts].sort(()=>Math.random()-0.5);
+    const correct=current.region+' — '+current.view;
+    document.getElementById('actions').innerHTML=shuffled.map(o=>
+      `<button onclick="answer(this,'${o.replace(/'/g,"")}'==='${correct.replace(/'/g,"")}')">${o}</button>`).join('');
+    askedAt=performance.now();
+  }
+
+  window.answer=function(btn,correct){
+    if(!running) return;
+    const speedMs=performance.now()-askedAt;
+    // accuracy: simulate a placement accuracy for correct answers
+    const accuracy=correct? (80+Math.floor(Math.random()*20)) : 0;
+    const ev=eng.answer(correct,{accuracy,speedMs});
+    document.getElementById('score').textContent=ev.total;
+    document.getElementById('combo').textContent='×'+ev.multiplier;
+    document.getElementById('streak').textContent=ev.streak+' / '+ev.best;
+    setGlow(ev.glow);
+    popup(ev.popup, correct?(ev.multiplier>=2?'#fbbf24':'#34d399'):'#fb7185');
+    if(ev.tier && correct) tierFlash(ev.milestone?ev.tier+'!':ev.tier); else tierFlash('');
+    btn.className=correct?'good':'bad';
+    setTimeout(()=>{ if(running) nextOrder(); }, 340);
+  };
+
+  window.startShift=function(){
+    eng=StreakEngine({storage:window.localStorage});
+    timeLeft=60; running=true; seedN=Math.floor(Math.random()*1e6);
+    document.getElementById('score').textContent='0';
+    nextOrder();
+    clearInterval(timer);
+    timer=setInterval(()=>{
+      timeLeft--; document.getElementById('time').textContent=timeLeft;
+      if(timeLeft<=0){ endShift(); }
+    },1000);
+  };
+
+  function endShift(){
+    running=false; clearInterval(timer); setGlow(0); tierFlash('');
+    const s=eng.state();
+    document.getElementById('reqhost').innerHTML=
+      `<div class="end"><h1>Shift complete</h1>
+       <p class="sub">Score <b style="color:var(--cy)">${s.total}</b> · Accuracy ${s.accuracy}% · Best streak ${s.best} · Peak combo ×${s.maxCombo}</p></div>`;
+    document.getElementById('actions').innerHTML='<button class="start" onclick="startShift()">New shift</button>';
+  }
+
+  // show a sample order at rest
+  (function(){ const req=Requisition.generate({region:'Wrist',view:'PA',seed:1}); document.getElementById('reqhost').innerHTML=Requisition.card(req);
+    const t=StreakComboAPI.selfTest(), r=Requisition.selfTest();
+    document.getElementById('foot').textContent='Engines self-test: streak '+(t.pass?'PASS':'FAIL')+' · requisition '+(r.pass?'PASS':'FAIL');
+  })();
+</script>
+</body>
+</html>

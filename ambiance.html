@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positioning Pro — Suite Ambiance (Roadmap #15)</title>
+<style>
+  :root{--ink:#e6edf7;--mut:#8fa3c0;--cy:#38bdf8;}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#04060c;color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif}
+  .scene{position:fixed;inset:0;perspective:900px;background:
+      radial-gradient(120% 80% at 50% -10%,#0e1830,#04060c 70%)}
+  .wall{position:absolute;left:0;right:0;top:0;height:62%;
+        background:linear-gradient(180deg,#0a1120,#0c1424);border-bottom:1px solid #0a1a2c}
+  .floor{position:absolute;left:0;right:0;bottom:0;height:38%;transform-origin:top;
+        background:linear-gradient(180deg,#0b1526,#060a14);
+        -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.9),rgba(0,0,0,.12));
+        mask-image:linear-gradient(180deg,rgba(0,0,0,.9),rgba(0,0,0,.12))}
+  .reflection{position:absolute;left:0;right:0;bottom:0;height:38%;overflow:hidden;opacity:.16;transform:scaleY(-1);transform-origin:top;filter:blur(1px)}
+  /* view-box monitors on the wall */
+  .viewbox{position:absolute;top:12%;width:190px;height:230px;border-radius:8px;background:#0a1424;border:2px solid #12233a;
+           box-shadow:0 0 40px rgba(56,189,248,.06),inset 0 0 30px rgba(0,0,0,.5);overflow:hidden}
+  .viewbox .panel{position:absolute;inset:0;background:linear-gradient(180deg,#dfe9f7,#aebdd4);opacity:.9;animation:flicker 7s infinite}
+  .viewbox .film{position:absolute;inset:10px;border-radius:4px;background:#0b1524;overflow:hidden}
+  .viewbox.vb1{left:14%} .viewbox.vb2{left:38%;animation-delay:.5s} .viewbox.vb3{right:14%;top:16%;height:200px;width:170px}
+  .viewbox .panel.f2{animation-delay:1.7s;animation-duration:9s}
+  .viewbox .panel.f3{animation-delay:.9s;animation-duration:6s}
+  @keyframes flicker{0%,100%{filter:brightness(1)}3%{filter:brightness(.7)}4%{filter:brightness(1.06)}7%{filter:brightness(.85)}9%{filter:brightness(1)}42%{filter:brightness(1)}43%{filter:brightness(.6)}44%{filter:brightness(1.05)}70%{filter:brightness(1)}}
+  .safelight{position:absolute;top:4%;left:50%;transform:translateX(-50%);width:280px;height:60px;border-radius:0 0 40px 40px;
+             background:radial-gradient(60% 120% at 50% 0%,rgba(255,80,60,.5),rgba(255,60,40,0));filter:blur(6px);animation:pulseGlow 6s infinite}
+  @keyframes pulseGlow{0%,100%{opacity:.5}50%{opacity:.8}}
+  #dust{position:absolute;inset:0;pointer-events:none}
+  .cone{position:absolute;top:6%;left:50%;transform:translateX(-50%);
+        width:0;height:0;border-left:120px solid transparent;border-right:120px solid transparent;border-top:360px solid rgba(180,210,255,.05);filter:blur(3px)}
+  .cap{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--mut);font-size:12px}
+  .film svg{width:100%;height:100%}
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="wall"></div>
+  <div class="safelight"></div>
+  <div class="cone"></div>
+
+  <div class="viewbox vb1"><div class="panel"></div><div class="film"><svg viewBox="0 0 100 130"><g fill="#f2f6ff"><rect x="44" y="20" width="12" height="70" rx="5"/><ellipse cx="50" cy="98" rx="20" ry="10"/></g></svg></div></div>
+  <div class="viewbox vb2"><div class="panel f2"></div><div class="film"><svg viewBox="0 0 100 130"><g fill="#eef4ff"><rect x="30" y="18" width="9" height="60" rx="4"/><rect x="46" y="14" width="9" height="64" rx="4"/><rect x="62" y="20" width="8" height="58" rx="4"/></g></svg></div></div>
+  <div class="viewbox vb3"><div class="panel f3"></div><div class="film"><svg viewBox="0 0 100 130"><g fill="#f2f6ff"><rect x="42" y="16" width="14" height="76" rx="6"/><rect x="34" y="92" width="30" height="16" rx="6"/></g></svg></div></div>
+
+  <canvas id="dust"></canvas>
+  <div class="floor"></div>
+  <div class="cap">Ambient radiology suite — flickering viewboxes, safelight glow, drifting dust in the beam, reflective floor. Pure CSS + canvas.</div>
+</div>
+
+<script>
+  const c=document.getElementById('dust'), x=c.getContext('2d');
+  function size(){ c.width=innerWidth; c.height=innerHeight; } size(); addEventListener('resize',size);
+  const motes=[]; for(let i=0;i<90;i++) motes.push({x:Math.random()*innerWidth, y:Math.random()*innerHeight, s:Math.random()*1.6+0.3, v:Math.random()*0.25+0.05, a:Math.random()*0.4+0.1});
+  const cx=()=>innerWidth/2;
+  (function anim(){
+    requestAnimationFrame(anim); x.clearRect(0,0,c.width,c.height);
+    for(const m of motes){
+      m.y+=m.v; m.x+=Math.sin((m.y+m.s*40)/60)*0.15;
+      if(m.y>innerHeight*0.62){ m.y=innerHeight*0.06; m.x=cx()+(Math.random()-0.5)*220; }
+      // brighter inside the beam cone near the top-center
+      const inBeam = Math.abs(m.x-cx()) < (m.y-innerHeight*0.06)*0.33 + 20 && m.y<innerHeight*0.55;
+      x.beginPath(); x.arc(m.x,m.y,m.s,0,7);
+      x.fillStyle='rgba(190,220,255,'+(inBeam?m.a*1.8:m.a*0.5)+')'; x.fill();
+    }
+  })();
+</script>
+</body>
+</html>
