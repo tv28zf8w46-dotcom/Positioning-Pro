@@ -5,6 +5,7 @@ node_modules/
 .DS_Store
 
 # Timestamped safety backups (git history is the real backup)
+backups/
 index.backup-*.html
 www/index.stale-backup-*.html
 
