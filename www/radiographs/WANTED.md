@@ -1,11 +1,8 @@
 # Wanted: reference radiographs
 
-87 projection views still need a reference image (shown after a "clear image" exposure). Two exhaustive Wikimedia Commons searches found no accurately-matching, freely-licensed images for these.
+81 projection views still need a reference image (shown after a "clear image" exposure). Three exhaustive Wikimedia Commons searches (including pathology-inclusive) found no accurately-matching, freely-licensed images for these — most are niche skull/facial/TMJ and spine-oblique projections.
 
-**To add your own:** save a de-identified JPG into radiographs/ (and www/radiographs/), then add an entry to radiographs/manifest.js keyed "Region|View" with {src, title, artist, license, licUrl, page}. Images you shoot yourselves in lab (phantoms) are ideal — no licensing constraints.
-
-## Abdomen
-- [ ] Upright
+**To add your own:** save a de-identified JPG into radiographs/ (and www/radiographs/), then add an entry to radiographs/manifest.js keyed "Region|View" with {src, title, artist, license, licUrl, page}. Program-shot phantom images are ideal — no licensing constraints and no PHI.
 
 ## Acetabulum
 - [ ] RPO
@@ -18,7 +15,6 @@
 
 ## Calcaneus
 - [ ] Axial Plantodorsal
-- [ ] Lateral
 
 ## Cranium
 - [ ] PA
@@ -46,7 +42,6 @@
 - [ ] Axiolateral
 
 ## Humerus
-- [ ] AP
 - [ ] Lateral
 - [ ] Transthoracic Lateral
 - [ ] Neutral Humerus
@@ -78,7 +73,6 @@
 - [ ] Left Lateral
 
 ## Neck
-- [ ] Lateral
 - [ ] AP
 
 ## Orbits
@@ -141,10 +135,6 @@
 
 ## Thumb/Finger
 - [ ] Oblique
-
-## Tib-Fib
-- [ ] AP
-- [ ] Lateral
 
 ## Wrist
 - [ ] Oblique
