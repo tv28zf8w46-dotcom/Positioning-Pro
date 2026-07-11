@@ -2,7 +2,7 @@
 
 Images shown after a "clear image" exposure in Positioning Pro. All from Wikimedia Commons under CC0, CC BY, CC BY-SA, or public-domain terms (verified per file), permitting commercial redistribution with attribution (share-alike terms apply to derivatives of the BY-SA items).
 
-Coverage: 58 projection views have a reference image; the rest are intentionally omitted for lack of an accurately-matching, freely-licensed radiograph.
+Coverage: 63 projection views have a reference image; the rest are intentionally omitted for lack of an accurately-matching, freely-licensed radiograph.
 
 - **Abdomen|PA Chest** — [Normal posteroanterior (PA) chest radiograph (X-ray).jpg](https://commons.wikimedia.org/w/index.php?curid=61738612), Mikael Häggström, CC0
 - **Abdomen|Supine (KUB)** — [Kidney stones abdominal X-ray.jpg](https://commons.wikimedia.org/w/index.php?curid=5784395), Bill Rhodes from Asheville, CC BY 2.0
@@ -20,6 +20,7 @@ Coverage: 58 projection views have a reference image; the rest are intentionally
 - **Chest|PA** — [Normal posteroanterior (PA) chest radiograph (X-ray).jpg](https://commons.wikimedia.org/w/index.php?curid=61738612), Mikael Häggström, CC0
 - **Clavicle|AP Axial** — [Clavicle Fracture Left.jpg](https://commons.wikimedia.org/w/index.php?curid=59569959), Majorkev (talk) (Uploads), CC BY 3.0
 - **Clavicle|AP** — [Clavicle fracture.jpg](https://commons.wikimedia.org/w/index.php?curid=1139694), mexican 2000, CC BY-SA 2.0
+- **Cranium|Lateral** — [Lateral Face X-Ray.jpg](https://commons.wikimedia.org/w/index.php?curid=178174039), ForbiddenJazz, CC0
 - **Elbow|AP** — [X-ray of normal elbow by anteroposterior projection.jpg](https://commons.wikimedia.org/w/index.php?curid=63719646), Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D., CC0
 - **Elbow|External Oblique** — [X-ray of normal elbow by 30 degrees external oblique projection.jpg](https://commons.wikimedia.org/w/index.php?curid=63719645), Mikael Häggström, CC0
 - **Elbow|Internal Oblique** — [X-ray of normal elbow by 30 degrees internal oblique projection.jpg](https://commons.wikimedia.org/w/index.php?curid=63719644), Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D., CC0
@@ -31,7 +32,9 @@ Coverage: 58 projection views have a reference image; the rest are intentionally
 - **Foot|Lateral** — [X-ray of normal right foot by lateral projection.jpg](https://commons.wikimedia.org/w/index.php?curid=61347912), Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D., CC0
 - **Foot|Oblique** — [X-ray of normal right foot by oblique projection.jpg](https://commons.wikimedia.org/w/index.php?curid=61347911), Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D., CC0
 - **Forearm|AP** — [X ray of Fore arm ap and lat view.jpg](https://commons.wikimedia.org/w/index.php?curid=130834692), Challiyan, CC BY-SA 3.0
+- **Forearm|Crosstable Lateral** — [X ray of Fore arm ap and lat view.jpg](https://commons.wikimedia.org/w/index.php?curid=130834692), Challiyan, CC BY-SA 3.0
 - **Forearm|Lateral** — [X ray of Fore arm ap and lat view.jpg](https://commons.wikimedia.org/w/index.php?curid=130834692), Challiyan, CC BY-SA 3.0
+- **Forearm|PA** — [X ray of Fore arm ap and lat view.jpg](https://commons.wikimedia.org/w/index.php?curid=130834692), Challiyan, CC BY-SA 3.0
 - **Hand|Fan Lateral** — [X-ray of normal hand by lateral projection.jpg](https://commons.wikimedia.org/w/index.php?curid=63719650), Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D., CC0
 - **Hand|Oblique** — [X-ray of normal hand by oblique projection.jpg](https://commons.wikimedia.org/w/index.php?curid=63719654), Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D., CC0
 - **Hand|PA** — [X-ray of normal hand by dorsoplantar projection.jpg](https://commons.wikimedia.org/w/index.php?curid=63719647), Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D., CC0
@@ -51,8 +54,10 @@ Coverage: 58 projection views have a reference image; the rest are intentionally
 - **Ribs|RAO** — [Fracturedribsmarked.jpg](https://commons.wikimedia.org/w/index.php?curid=11172814), James Heilman, MD, CC BY-SA 3.0
 - **Ribs|RPO** — [Fracturedribsmarked.jpg](https://commons.wikimedia.org/w/index.php?curid=11172814), James Heilman, MD, CC BY-SA 3.0
 - **Sacrum/Coccyx|Lateral** — [X-ray of coccyx fracture.jpg](https://commons.wikimedia.org/w/index.php?curid=125776292), Jmarchn, CC BY-SA 3.0
+- **Scapula|Lateral (Scap Y)** — [Y-projection X-ray of a normal shoulder.jpg](https://commons.wikimedia.org/w/index.php?curid=64959081), Mikael Häggström, CC0
 - **Shoulder|Neutral Shoulder** — [X-ray of osteoarthritis of the shoulder.jpg](https://commons.wikimedia.org/w/index.php?curid=77127313), Article authors: Vladimir V. Senatorov, Ramon Cuevas-Trisan, Francisco J. Garcia, Gabriel P. Suciu, Robert H. Parkes and Alina M. Alonso, CC BY 4.0
 - **Shoulder|Shoulder Y** — [Y-projection X-ray of a normal shoulder.jpg](https://commons.wikimedia.org/w/index.php?curid=64959081), Mikael Häggström, CC0
+- **Sinuses|Lateral** — [Lateral Face X-Ray.jpg](https://commons.wikimedia.org/w/index.php?curid=178174039), ForbiddenJazz, CC0
 - **Sternum|Lateral** — [Nuss x-ray.jpg](https://commons.wikimedia.org/w/index.php?curid=4508600), Stepshep, CC BY-SA 3.0
 - **T-Spine|AP** — [Thoracic spine AP.png](https://commons.wikimedia.org/w/index.php?curid=56495041), IanWhyte, CC BY-SA 4.0
 - **T-Spine|Lateral** — [Thoracic spine Lat.png](https://commons.wikimedia.org/w/index.php?curid=56495107), IanWhyte, CC BY-SA 4.0
