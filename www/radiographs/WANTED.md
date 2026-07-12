@@ -1,6 +1,6 @@
 # Wanted: reference radiographs
 
-21 of 150 projection views still need a reference image (shown after a "clear image" exposure). The remaining gaps are the hardest to source under free licenses.
+17 of 150 projection views still need a reference image (shown after a "clear image" exposure).
 
 **To add your own:** save a de-identified JPG into radiographs/ (and www/radiographs/), then add an entry to radiographs/manifest.js keyed "Region|View" with {src, title, artist, license, licUrl, page}. Program-shot phantom images are ideal — no licensing constraints and no PHI.
 
@@ -30,9 +30,6 @@
 ## Orbits
 - [ ] Rhese (Right)
 - [ ] Rhese (Left)
-- [ ] Waters
-- [ ] Modified Waters
-- [ ] Lateral
 
 ## SI Joints
 - [ ] LPO
@@ -43,7 +40,6 @@
 
 ## Sinuses
 - [ ] SMV
-- [ ] Caldwell
 
 ## Sternum
 - [ ] RAO
