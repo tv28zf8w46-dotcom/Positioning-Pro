@@ -17,7 +17,7 @@ A rigged low-poly humanoid (glTF model, animated via Three.js skeleton) that act
 ### 3. Volumetric x-ray beam (custom shader)
 A translucent cone from tube to detector rendered with a fragment shader: animated scanlines, falloff, collimation borders that tighten/expand as the student adjusts field size. Beam turns green/red on grade.
 
-### 4. Simulated radiograph output ✅ SHIPPED 2026-07-17
+### 4. Simulated radiograph output ❌ REMOVED 2026-07-17 (real reference radiographs preferred)
 After "Expose," render the resulting image: a stylized radiograph (SVG or shader-based) showing the consequences of errors — too-low kVp = underpenetrated/white, wrong CR = clipped anatomy, wrong angle = distorted joint spaces. Grading becomes visual, not just text.
 
 ### 5. AR mode (WebXR / Capacitor plugin)
@@ -52,10 +52,10 @@ The slate/cyan base is strong — push it: a custom display typeface for the her
 ### 12. Animated view transitions
 Use the View Transitions API (supported in modern WKWebView) so picker → room → review morph into each other instead of hard `innerHTML` repaints.
 
-### 13. Patient variety ✅ SHIPPED 2026-07-17 (requisition cards; body-type variety still open)
+### 13. Patient variety ❌ REMOVED 2026-07-17 (requisition cards cut by request; body-type variety still open)
 Multiple patient body types/skin tones, randomized per order, with the "incoming order" card styled as a hospital requisition (patient name, DOB, clinical history). Reinforces reading real orders.
 
-### 14. Progress constellation ✅ SHIPPED 2026-07-17 (lightweight Skill Map version)
+### 14. Progress constellation ✅ SHIPPED 2026-07-17 (full-body silhouette Skill Map page; 3× 100% per routine = proficient)
 Replace the practice log grid with a zoomable body map: each region glows brighter as mastery grows, failed projections pulse red. A "skill skeleton" instead of a stats table.
 
 ### 15. Dark radiology-suite ambiance
@@ -74,7 +74,7 @@ Orders arrive with siren/pager sounds; the student completes a random trauma rou
 ### 18. Ghost replay / attending review ✅ SHIPPED 2026-07-17 (attending commentary + SIM debrief)
 After a SIM, replay the student's choices step-by-step with an "attending radiologist" commentary track explaining each miss.
 
-### 19. Spaced-repetition scheduler ✅ SHIPPED 2026-07-17
+### 19. Spaced-repetition scheduler ✅ SHIPPED 2026-07-17 (simplified: due-until-perfect queue, no SM-2)
 Track per-projection error history in localStorage and surface a daily "Due for review" queue on launch.
 
 ---
