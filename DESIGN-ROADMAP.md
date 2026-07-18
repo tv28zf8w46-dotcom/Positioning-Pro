@@ -1,24 +1,32 @@
 # Positioning Pro — Design Roadmap
 
-Ambitious design & interaction improvements, roughly ordered by ambition. Everything below runs in the Capacitor WKWebView on iOS — no native code required.
+Ambitious design & interaction improvements. Everything here runs in the Capacitor WKWebView on iOS — no native code required.
 
-**Before touching anything:** commit to git and push to GitHub, then work on a branch (`git checkout -b redesign`) so every change is reversible.
+**Before touching anything:** commit to git and push to GitHub, then work on a branch so every change is reversible.
+
+---
+
+## ✅ Shipped
+
+Original roadmap numbers kept for reference.
+
+- **#1 Full 3D exam room (Three.js)** — real WebGL scene (`Room3D`): orbitable camera, modeled table/wall bucky, ceiling tube, live SID readout. Replaced the CSS pseudo-3D room.
+- **#6 Drag-to-position controls** — drag a crosshair onto the patient and dial the tube angle; graded by distance-from-target and degrees-off (`gradeCrDrag`, toggleable vs. tiles).
+- **#10 Haptics + sound design** — `feedback-fx.js`: knob detents, success/failure cues, Capacitor haptics.
+- **#14 Progress "constellation" → Skill Map** *(2026-07-17)* — a dedicated page with a large full-body silhouette (36 regions). A body part turns green/**proficient** after three 100% exposures of every view in one of its routines; amber **learning** from the first attempt. Laterality alternates so every extremity has its own limb; tap a part for per-view pip progress.
+- **#16 Streak fire & combo multipliers** *(2026-07-17)* — combo multiplier tiers, screen-edge glow, flying score popups, persistent best-streak.
+- **#18 Attending review** *(2026-07-17)* — "attending radiologist" commentary after a non-perfect exposure, listing only the missed/close fields, plus an end-of-SIM debrief. (A clear image gets no commentary.)
+- **#19 Due-for-review queue** *(2026-07-17)* — per-projection history in localStorage; a projection stays "Due for review" until cleared with a 100%. (Simple queue, not a full spaced-repetition scheduler.)
 
 ---
 
 ## Flagship / True 3D
-
-### 1. Full 3D exam room (Three.js)
-Replace the CSS pseudo-3D room with a real WebGL scene: orbitable camera, modeled x-ray table, wall bucky, ceiling-mounted tube on rails. Students drag the tube along its rails, rotate the gantry for cephalic/caudal angles, and the SID readout updates live. The single biggest visual upgrade possible.
 
 ### 2. Poseable 3D patient
 A rigged low-poly humanoid (glTF model, animated via Three.js skeleton) that actually assumes positions: supine, prone, RPO 45°, Sim's, upright lateral. A wrong position choice makes the patient visibly pose wrong — far more instructive than a stick figure.
 
 ### 3. Volumetric x-ray beam (custom shader)
 A translucent cone from tube to detector rendered with a fragment shader: animated scanlines, falloff, collimation borders that tighten/expand as the student adjusts field size. Beam turns green/red on grade.
-
-### 4. Simulated radiograph output ❌ REMOVED 2026-07-17 (real reference radiographs preferred)
-After "Expose," render the resulting image: a stylized radiograph (SVG or shader-based) showing the consequences of errors — too-low kVp = underpenetrated/white, wrong CR = clipped anatomy, wrong angle = distorted joint spaces. Grading becomes visual, not just text.
 
 ### 5. AR mode (WebXR / Capacitor plugin)
 Project the tube and patient onto a real tabletop through the iPhone camera; the student physically walks around to set the projection. Ambitious, but it's the demo that gets people talking.
@@ -27,20 +35,14 @@ Project the tube and patient onto a real tabletop through the iPhone camera; the
 
 ## High-Impact Interactivity
 
-### 6. Drag-to-position controls
-Instead of picking CR from tiles, drag a crosshair onto the patient and rotate an angle dial for the tube. Grade by distance-from-target and degrees-off. Turns multiple choice into motor practice — which is what positioning actually is.
-
 ### 7. Physical control console
 Replace kVp/mAs inputs with a skeuomorphic generator panel: rotary knobs, segmented LED displays, a two-stage "prep → expose" button with capacitor-charging whine and audible exposure tone.
 
 ### 8. Cinematic exposure sequence
-On expose: room lights dim, collimator light snaps on, anatomical marker glints, beam flash, then the radiograph "develops" in on the wall monitor. ~2 seconds of theater that makes every rep satisfying.
+On expose: room lights dim, collimator light snaps on, anatomical marker glints, beam flash, then the reference radiograph reveals on the wall monitor. ~2 seconds of theater that makes every rep satisfying.
 
 ### 9. 3D skull for positioning lines
 The skull line drills (OML, IOML, GAL) drawn as glowing planes on a rotating 3D skull. Students rotate the skull until the line is perpendicular/parallel to the IR. The hardest thing to visualize from textbooks — huge pedagogical win.
-
-### 10. Haptics + sound design
-Capacitor Haptics plugin: click on knob detents, thud on bucky selection, success/failure haptic patterns. Cheap to add, massive feel upgrade on iOS.
 
 ---
 
@@ -52,11 +54,8 @@ The slate/cyan base is strong — push it: a custom display typeface for the her
 ### 12. Animated view transitions
 Use the View Transitions API (supported in modern WKWebView) so picker → room → review morph into each other instead of hard `innerHTML` repaints.
 
-### 13. Patient variety ❌ REMOVED 2026-07-17 (requisition cards cut by request; body-type variety still open)
-Multiple patient body types/skin tones, randomized per order, with the "incoming order" card styled as a hospital requisition (patient name, DOB, clinical history). Reinforces reading real orders.
-
-### 14. Progress constellation ✅ SHIPPED 2026-07-17 (full-body silhouette Skill Map page; 3× 100% per routine = proficient)
-Replace the practice log grid with a zoomable body map: each region glows brighter as mastery grows, failed projections pulse red. A "skill skeleton" instead of a stats table.
+### 13. Patient body-type variety
+Multiple patient body types (asthenic / sthenic / hypersthenic) that change the technique the student should choose. Reinforces reading habitus off the patient rather than memorizing one number.
 
 ### 15. Dark radiology-suite ambiance
 Subtle animated elements: flickering viewbox monitors on the wall, drifting dust in the beam cone, reflective floor (CSS mask gradient). Depth without performance cost.
@@ -65,20 +64,18 @@ Subtle animated elements: flickering viewbox monitors on the wall, drifting dust
 
 ## Engagement Systems
 
-### 16. Streak fire & combo multipliers ✅ SHIPPED 2026-07-17
-Visible streak meter that charges up, screen-edge glow at high combo, score popups that fly to the total. Duolingo-style retention mechanics.
-
 ### 17. Timed "trauma shift" mode
 Orders arrive with siren/pager sounds; the student completes a random trauma routine against a clock. Leaderboard vs. their own bests.
 
-### 18. Ghost replay / attending review ✅ SHIPPED 2026-07-17 (attending commentary + SIM debrief)
-After a SIM, replay the student's choices step-by-step with an "attending radiologist" commentary track explaining each miss.
+---
 
-### 19. Spaced-repetition scheduler ✅ SHIPPED 2026-07-17 (simplified: due-until-perfect queue, no SM-2)
-Track per-projection error history in localStorage and surface a daily "Due for review" queue on launch.
+## Decided against
+
+- **Simulated radiograph output** — the app already shows real reference radiographs after a clear image; a synthesized/stylized film added noise without pedagogical value.
+- **Requisition / hospital-order cards** — cut on review; cluttered the projection screen.
 
 ---
 
-## Suggested first build
+## Suggested next build
 
-Highest-value combo: **real 3D room (#1) + drag-to-position (#6) + cinematic exposure (#8)** — one coherent upgrade that transforms both look and pedagogy.
+**Cinematic exposure sequence (#8)** layered onto the existing 3D room and drag-to-position — the pieces that make each rep feel like a real exposure are the remaining high-value, low-risk polish.
