@@ -22,5 +22,14 @@ android/.idea/
 
 # Logs / misc
 *.log
+build-log.txt
 npm-debug.log*
 .env
+
+# Signing secrets & tester/promo PII (never commit)
+keystore.properties
+*.jks
+*.keystore
+*tester*.csv
+promo*.csv
+promotion_codes.csv

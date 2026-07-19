@@ -99,3 +99,15 @@ app/src/main/assets/public
 app/src/main/assets/capacitor.config.json
 app/src/main/assets/capacitor.plugins.json
 app/src/main/res/xml/config.xml
+
+# Signing (do not commit)
+keystore.properties
+*.jks
+*.keystore
+
+# Promo codes & tester PII (redeemable / personal - do not commit)
+promotion_codes.csv
+promo*.csv
+tester-code-assignments.csv
+*tester*.csv
+build-log.txt
