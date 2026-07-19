@@ -1453,7 +1453,7 @@ function footLateralArt(){
 }
 function crPanelPose(exam){ const ir=normalizeValue(state.answers.ir||exam.ir).toLowerCase(); return ir.includes("wall")?"standing":"lying"; }
 /** Correct CR entry point (in getCrTarget coordinate space) for the current detector choice. */
-function crCorrectPos(exam){ const a=crAtlas(exam); if(a)return a.cr; return getCrTarget(exam,crPanelPose(exam)); }
+function crCorrectPos(exam){ const a=crAtlas(exam); if(a){ if(crPhotoMirror(exam)){ const p=a.vb.split(" ").map(Number); return {x:(2*p[0]+p[2])-a.cr.x,y:a.cr.y}; } return a.cr; } return getCrTarget(exam,crPanelPose(exam)); }
 /** Signed correct tube angle: +cephalad / -caudad / 0 perpendicular. */
 function signedCrAngle(a){ return (a&&a.dir?a.dir:0)*(a?a.deg:0); }
 /** Region-scaled crosshair tolerance (px in getCrTarget space). Tighter for small parts + hard mode. */
@@ -1540,6 +1540,18 @@ const RADIOGRAPH_NATIVE_SIDE={
 /** true when the displayed radiograph should be horizontally mirrored to match the stamped side. */
 function radiographMirror(exam){ if(!exam||!exam._lat)return false; const nat=RADIOGRAPH_NATIVE_SIDE[exam.region+"|"+exam.view]; return !!nat&&nat!==exam._lat; }
 function radiographMirrorStyle(exam){ return radiographMirror(exam)?"transform:scaleX(-1);":""; }
+/* Native anatomical side of each CR-drag PATIENT PHOTO (read from the photo). When a
+   laterality-specific projection is stamped the opposite side, the photo is mirrored AND the
+   grading target x is reflected by the same axis (renderCrAtlasCard + crCorrectPos), so the
+   crosshair still grades correctly. Only listed here when the photo visibly shows a side. */
+const CR_PHOTO_NATIVE_SIDE={
+  "Foot|AP":"right","Foot|Oblique":"right","Foot|Lateral":"right",
+  "Hand|PA":"right","Hand|Oblique":"right",
+  "Ankle|AP":"right","Ankle|Mortise":"right","Ankle|Medial Oblique":"right"
+  // Knee/Patella/Femur/Tib-Fib/Forearm/Humerus/Shoulder CR photos are bare limbs or non-lateralizing
+  // views (side not visible), so mirroring has no effect and they are intentionally left unmapped.
+};
+function crPhotoMirror(exam){ if(!exam||!exam._lat)return false; const nat=CR_PHOTO_NATIVE_SIDE[normalizeValue(exam.region)+"|"+normalizeValue(exam.view)]; return !!nat&&nat!==exam._lat; }
 /* Laterality wording: paired parts read "Right Hand"; midline skull structures read
    "Cranium - Right side" / "Lateral (Right side)" since there is only one cranium. */
 function sideOf(exam){ return (exam&&exam._lat)?(exam._lat==="left"?"Left":"Right"):""; }
@@ -1922,7 +1934,8 @@ function renderCrAtlasCard(exam,result,atlas){
   const park={x:mx+24,y:my+h-24};
   const cx=placed?pos.x:park.x, cy=placed?pos.y:park.y;
   const img=CR_PHOTOS[atlas.photo]||"";
-  const image=img?`<image href="${img}" x="${mx}" y="${my}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:`<rect x="${mx}" y="${my}" width="${w}" height="${h}" fill="#0b1120"/><text x="${mx+w/2}" y="${my+h/2}" text-anchor="middle" fill="#64748b" font-size="14">image missing</text>`;
+  const mir=crPhotoMirror(exam)?` transform="translate(${2*mx+w} 0) scale(-1 1)"`:"";
+  const image=img?`<image href="${img}"${mir} x="${mx}" y="${my}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`:`<rect x="${mx}" y="${my}" width="${w}" height="${h}" fill="#0b1120"/><text x="${mx+w/2}" y="${my+h/2}" text-anchor="middle" fill="#64748b" font-size="14">image missing</text>`;
   const targetRing="";
   const cc=reveal?(result&&result.posOk?"#6ee7b7":"#fda4af"):"#fbbf24";
   const cross=`<g id="cr-cross" transform="translate(${cx} ${cy})" style="cursor:grab"><line x1="-15" y1="0" x2="15" y2="0" stroke="${cc}" stroke-width="2.4"/><line x1="0" y1="-15" x2="0" y2="15" stroke="${cc}" stroke-width="2.4"/><circle r="4" fill="${cc}"/></g>`;
@@ -2083,6 +2096,13 @@ if(typeof GhostReplay==="undefined")failures.push("GhostReplay module missing");
   const sidLong=exposureDemo(ex40,{mas:"10",focal:"Small",sid:"72"}); if(!sidLong||sidLong.label!=="Underexposed")failures.push("SID 72 when 40 expected should be Underexposed");
   if(exposureDemo(ex72,{mas:"10",focal:"Small",sid:"72"}))failures.push("correct SID should add no exposure fault");
   const sidMasCombo=exposureDemo(ex40,{mas:"16",focal:"Small",sid:"72"}); if(!sidMasCombo||sidMasCombo.label!=="Overexposed")failures.push("mAs +50% high with too-long SID should net to Overexposed"); }
+// --- CR-drag photo laterality: mirror photo AND reflect the grading target so grading stays correct ---
+{ const fa=crAtlas({region:"Foot",view:"AP"}); if(fa){ const p=fa.vb.split(" ").map(Number); const reflected=(2*p[0]+p[2])-fa.cr.x;
+  if(crPhotoMirror({region:"Foot",view:"AP",_lat:"right"}))failures.push("native-side foot photo should not mirror");
+  if(!crPhotoMirror({region:"Foot",view:"AP",_lat:"left"}))failures.push("opposite-side foot photo should mirror");
+  if(crCorrectPos({region:"Foot",view:"AP",_lat:"right"}).x!==fa.cr.x)failures.push("non-mirrored CR target should be unchanged");
+  if(crCorrectPos({region:"Foot",view:"AP",_lat:"left"}).x!==reflected)failures.push("mirrored CR target x should be reflected");
+  if(crPhotoMirror({region:"Knee",view:"AP",_lat:"left"}))failures.push("unmapped CR photo should never mirror"); } }
 // --- "Just unlocked" badge lifecycle: flagged on unlock, cleared once played ---
 { const _bak=localStorage.getItem(LS_NEWUNLOCK); localStorage.removeItem(LS_NEWUNLOCK);
   if(isNewUnlock("Trauma Humerus Routine"))failures.push("new-unlock should start empty");
