@@ -1,5 +1,5 @@
 /* ============================================================================
- * Positioning Pro — Ghost Replay / Attending Review  (Design Roadmap #18)
+ * Positioning Pro - Ghost Replay / Attending Review  (Design Roadmap #18)
  * ----------------------------------------------------------------------------
  * Turns a recorded sequence of a student's SIM choices into an "attending
  * radiologist" commentary track: for each field it states the verdict and, on
@@ -21,22 +21,22 @@
   function consequence(field, chosen, correct) {
     const hi = num(chosen) > num(correct);
     switch (field) {
-      case 'kvp': return hi ? 'too much penetration — the image will look flat and low-contrast'
-        : 'not enough penetration — the part reads underexposed and washed-out white';
-      case 'mas': return hi ? 'overexposed — the receptor is saturated and detail is lost in the dark'
-        : 'underexposed — the image is mottled and grainy from quantum noise';
+      case 'kvp': return hi ? 'too much penetration - the image will look flat and low-contrast'
+        : 'not enough penetration - the part reads underexposed and washed-out white';
+      case 'mas': return hi ? 'overexposed - the receptor is saturated and detail is lost in the dark'
+        : 'underexposed - the image is mottled and grainy from quantum noise';
       case 'sid': return hi ? 'increased SID drops density and needs more technique'
         : 'short SID magnifies the anatomy and blurs the edges';
       case 'cr':
       case 'crPos': return 'the central ray is off the landmark, so the anatomy of interest is clipped by the collimation field';
       case 'crAngle': return 'the tube angle distorts the joint spaces and foreshortens the part';
-      case 'ir': return 'wrong detector selection — grid/AEC mismatch degrades the image';
+      case 'ir': return 'wrong detector selection - grid/AEC mismatch degrades the image';
       case 'focal': return 'large focal spot on fine anatomy reduces spatial resolution (more penumbra)';
       case 'pt': return 'the positioning itself is wrong, so the projection won’t demonstrate the required anatomy';
       default: return 'this deviates from the standard and will affect image quality';
     }
   }
-  const PRAISE = ['Correct — textbook.', 'Good call.', 'Exactly right.', 'Nailed it.', 'Spot on.'];
+  const PRAISE = ['Correct - textbook.', 'Good call.', 'Exactly right.', 'Nailed it.', 'Spot on.'];
 
   function num(v) { const n = parseFloat(v); return isFinite(n) ? n : NaN; }
 
@@ -52,11 +52,11 @@
     const label = LABEL[step.field] || step.field;
     const v = verdictOf(step);
     if (v === 'good') return { field: step.field, label, verdict: 'good', comment: PRAISE[i % PRAISE.length] };
-    const chosenStr = step.chosen != null ? String(step.chosen) : '—';
-    const corrStr = step.correct != null ? String(step.correct) : '—';
+    const chosenStr = step.chosen != null ? String(step.chosen) : '(none)';
+    const corrStr = step.correct != null ? String(step.correct) : '(none)';
     if (v === 'close')
       return { field: step.field, label, verdict: 'close',
-        comment: 'Close — you set ' + chosenStr + ', standard is ' + corrStr + '. Within range, but tighten it up next time.' };
+        comment: 'Close - you set ' + chosenStr + ', standard is ' + corrStr + '. Within range, but tighten it up next time.' };
     return { field: step.field, label, verdict: 'miss',
       comment: 'You chose ' + chosenStr + '; it should be ' + corrStr + '. Here ' + consequence(step.field, step.chosen, step.correct) + '.' };
   }
@@ -70,7 +70,7 @@
     const score = rev.length ? Math.round(100 * (hits + close * 0.5) / rev.length) : 0;
     let headline;
     if (score >= 90) headline = 'Diagnostic. Ready for the board.';
-    else if (score >= 70) headline = 'Solid — a couple of fixable details.';
+    else if (score >= 70) headline = 'Solid - a couple of fixable details.';
     else if (score >= 50) headline = 'Repeatable image, but several corrections needed.';
     else headline = 'This one would be a repeat. Let’s walk through it.';
     return { score, hits, close, misses, total: rev.length, headline };
