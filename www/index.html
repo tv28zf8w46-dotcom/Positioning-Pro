@@ -1496,9 +1496,29 @@ function radiographFor(exam){ if(typeof RADIOGRAPHS==="undefined"||!exam)return 
    When a laterality-specific projection is stamped the opposite side, the image is mirrored so the
    anatomy matches (the lead marker then reads reversed - tracked separately, see RADIOGRAPH_MARKER). */
 const RADIOGRAPH_NATIVE_SIDE={
-  "Forearm|AP":"right",   // marker "R"
-  "Hand|PA":"left",       // thumb on image-right (palm-down PA)
-  "Foot|AP":"right"       // marker "Dx" (dexter), great toe on image-left
+  // Upper extremity
+  "Forearm|AP":"right",                    // marker "R"
+  "Hand|PA":"left",                        // thumb on image-right (palm-down PA)
+  // Foot
+  "Foot|AP":"right",                       // marker "Dx", great toe image-left
+  "Foot|Oblique":"right",                  // marker "Dx"
+  "Foot|Lateral":"right",                  // marker "Dx"
+  // Ankle
+  "Ankle|AP":"left",                       // fibula/lateral malleolus image-right
+  "Ankle|Mortise":"left",                  // fibula image-right
+  "Ankle|Medial Oblique":"left",           // fibula image-right
+  // Knee
+  "Knee|AP":"right",                       // marker "Dx", fibula image-left
+  "Knee|Medial Oblique":"left",            // marker "L", fibula image-right
+  "Knee|Lateral Oblique":"left",           // marker "L"
+  "Knee|Lateral":"right",                  // marker "Dx"
+  "Knee|Intercondylar Sulcus (Camp)":"right", // marker "Dx"
+  // Tib-Fib
+  "Tib-Fib|AP":"right",                    // marker "R"
+  "Tib-Fib|Lateral":"right",               // marker "R"
+  // Femur / Patella
+  "Femur|AP":"left",                       // greater trochanter image-right, acetabulum image-left
+  "Patella|PA":"right"                     // marker "Dx", fibula image-left
 };
 /** true when the displayed radiograph should be horizontally mirrored to match the stamped side. */
 function radiographMirror(exam){ if(!exam||!exam._lat)return false; const nat=RADIOGRAPH_NATIVE_SIDE[exam.region+"|"+exam.view]; return !!nat&&nat!==exam._lat; }
