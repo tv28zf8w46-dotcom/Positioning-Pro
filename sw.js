@@ -1,5 +1,5 @@
 /* Positioning Pro service worker — offline shell cache. Bump CACHE version on each release. */
-const CACHE = "positioning-pro-v14";
+const CACHE = "positioning-pro-v15";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./feedback-fx.js", "./streak-combo.js", "./ghost-replay.js", "./icon-192.png", "./icon-512.png", "./icon-512-maskable.png"];
 
 self.addEventListener("install", (e) => {
