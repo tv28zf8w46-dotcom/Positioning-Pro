@@ -57,6 +57,13 @@
     if (v === 'close')
       return { field: step.field, label, verdict: 'close',
         comment: 'Close - you set ' + chosenStr + ', standard is ' + corrStr + '. Within range, but tighten it up next time.' };
+    if (step.field === 'focal') {
+      const choseSmall = String(step.chosen == null ? '' : step.chosen).toLowerCase().indexOf('small') >= 0;
+      return { field: step.field, label, verdict: 'miss',
+        comment: choseSmall
+          ? 'Small focal spots are for lower kVps. Using a small focal spot on this projection accelerates tube aging.'
+          : 'A large focal spot on this fine-detail projection reduces spatial resolution and adds penumbra.' };
+    }
     return { field: step.field, label, verdict: 'miss',
       comment: 'You chose ' + chosenStr + '; it should be ' + corrStr + '. Here ' + consequence(step.field, step.chosen, step.correct) + '.' };
   }

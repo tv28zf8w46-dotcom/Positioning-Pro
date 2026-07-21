@@ -387,6 +387,15 @@ p{color:#cbd5e1;line-height:1.45;margin:6px 0}
 @media (prefers-reduced-motion:reduce){.new-unlock-badge,.routine-block.fresh-unlock{animation:none}}
 .log-card{transition:border-color .12s,transform .12s}
 .log-card:hover{border-color:rgba(103,232,249,.5);transform:translateY(-1px)}
+/* Skill-Map proficiency celebration */
+.prof-core{position:relative;text-align:center;padding:14px;max-width:94vw;animation:celebRise .5s cubic-bezier(.2,.9,.25,1.15) both}
+.prof-body{display:block;height:min(56vh,500px);width:auto;max-width:92vw;margin:0 auto;filter:drop-shadow(0 12px 34px rgba(52,211,153,.30))}
+.prof-region{animation:profGreen 1s cubic-bezier(.2,.9,.25,1.4) both;transform-box:fill-box;transform-origin:center}
+@keyframes profGreen{0%{opacity:0;transform:scale(.5)}55%{opacity:1;transform:scale(1.22)}100%{transform:scale(1)}}
+.prof-bubble{animation:profBubble .55s .75s cubic-bezier(.2,.9,.25,1.55) both;transform-box:fill-box;transform-origin:left center}
+@keyframes profBubble{0%{opacity:0;transform:scale(.2)}60%{opacity:1;transform:scale(1.12)}100%{transform:scale(1)}}
+.prof-title{background:linear-gradient(180deg,#d1fae5,#34d399 55%,#0f766e)!important}
+@media (prefers-reduced-motion:reduce){.prof-region,.prof-bubble,.prof-core{animation:none}}
 /* ===== Guided Mode (Show Me How) walkthrough ===== */
 .wt-launch{position:relative;border-color:rgba(103,232,249,.55);background:linear-gradient(120deg,rgba(8,145,178,.4),rgba(109,40,217,.38));overflow:hidden}
 .wt-launch::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%);transform:translateX(-120%);animation:wtSheen 3.4s ease-in-out infinite}
@@ -1190,7 +1199,7 @@ function bindSidDial(){
     v=>{ state.answers.sid=String(v); const out=document.getElementById("sidReadout"); if(out)out.textContent=v+" in"; const m=document.getElementById("room3d-mount"); if(m){ m.dataset.sid=String(v); try{ if(typeof Room3D!=="undefined"&&Room3D.sync)Room3D.sync(); }catch(err){} } },
     v=>{ fxPlay("detent"); pick("sid",String(v)); });
   bindDial("cra-dial","cra-handle",{angleForValue:craAngleForValue,valueForAngle:craValueForAngle,snaps:[-42,-40,-37,-35,-30,-25,-20,-15,-10,-5,0,5,10,15,20,25,30,35,37,40,42],snapTol:1.2},
-    v=>{ state.answers.crAngle={signed:v}; stickCrAngle(v); const out=document.getElementById("craReadout"); if(out)out.textContent=crAngleLabelShort(v); },
+    v=>{ state.answers.crAngle={signed:v}; stickCrAngle(v); syncTubeAngle(v); const out=document.getElementById("craReadout"); if(out)out.textContent=crAngleLabelShort(v); },
     v=>fxPlay("detent"));
 }
 /** Shared semicircle-dial SVG markup: solid blue arc, a handle at `value`, and three outside labels (left/right/bottom-center). */
@@ -1540,12 +1549,17 @@ function setCrPos(x,y){ if(state.showDetails||state.walkthrough)return; state.an
 function crAngleLabel(s){ s=Math.round(s||0); if(s===0)return "0° (perpendicular)"; return Math.abs(s)+"° "+(s>0?"cephalad":"caudad"); }
 /** Compact form for the narrow dial-head readout (full wording is used elsewhere, e.g. review/hint text). */
 function crAngleLabelShort(s){ s=Math.round(s||0); if(s===0)return "0° perp."; return Math.abs(s)+"° "+(s>0?"ceph":"caud"); }
-function nudgeCra(d){ if(state.showDetails||state.walkthrough)return; const cur=(state.answers.crAngle&&isFinite(state.answers.crAngle.signed))?state.answers.crAngle.signed:0; const v=Math.max(-42,Math.min(42,Math.round(cur)+d)); state.answers.crAngle={signed:v}; stickCrAngle(v); fxPlay("knobTick"); const out=document.getElementById("craReadout"); if(out)out.textContent=crAngleLabelShort(v); const h=document.getElementById("cra-handle"); if(h){ const pt=dialPoint(craAngleForValue(v),DIAL_CX,DIAL_CY,DIAL_R); h.setAttribute("transform","translate("+pt.x.toFixed(1)+" "+pt.y.toFixed(1)+")"); } }
+/** Live-drive the 3D tube gantry from the user's CR-angle dial (no full re-render): the tube starts
+    perpendicular and tilts toward the correct beam position as the student dials in the angle. */
+function syncTubeAngle(v){ const m=document.getElementById("room3d-mount"); if(!m||m.dataset.horiz==="1")return; m.dataset.cr=String(Math.abs(v)); m.dataset.dir=String(v>0?1:v<0?-1:0); try{ if(typeof Room3D!=="undefined"&&Room3D.sync)Room3D.sync(); }catch(e){} }
+function nudgeCra(d){ if(state.showDetails||state.walkthrough)return; const cur=(state.answers.crAngle&&isFinite(state.answers.crAngle.signed))?state.answers.crAngle.signed:0; const v=Math.max(-42,Math.min(42,Math.round(cur)+d)); state.answers.crAngle={signed:v}; stickCrAngle(v); syncTubeAngle(v); fxPlay("knobTick"); const out=document.getElementById("craReadout"); if(out)out.textContent=crAngleLabelShort(v); const h=document.getElementById("cra-handle"); if(h){ const pt=dialPoint(craAngleForValue(v),DIAL_CX,DIAL_CY,DIAL_R); h.setAttribute("transform","translate("+pt.x.toFixed(1)+" "+pt.y.toFixed(1)+")"); } }
 function expose(){ if(state.showDetails||state.walkthrough)return; const exam=active(); const grade=gradeAnswers(state.answers,exam); const bonus=grade.perfect?Math.min(state.streak*3,30):0; state.lastGrade=grade; state.score+=grade.points+bonus; state.streak=grade.perfect?state.streak+1:0; state.feedback=grade.perfect?"correct":"miss"; state.phase="review"; fxPlay(grade.perfect?((state.streak>0&&state.streak%5===0)?"milestone":"correct"):"wrong"); if(!grade.perfect&&(state.mode==="final"||state.mode==="skull"))state.finalFailed=true; state.history=[{item:keyFrom(exam),area:exam.finalArea||(state.mode==="practice"?"Practice • "+exam.region:exam.region),routine:exam.finalRoutine||exam.exam,points:grade.points,possible:grade.possible,perfect:grade.perfect,misses:grade.misses,hard:state.hardMode,region:exam.region,view:exam.view,examName:exam.exam,customId:exam._customId||null},...state.history].slice(0,40); state.showDetails=true; state.exposureDemo=null; if(grade.perfect&&radiographFor(exam)){ state.modal="radiograph"; } else if(radiographFor(exam)){ const _demo=exposureDemo(exam,state.answers); if(_demo){ state.exposureDemo=_demo; state.modal="exposureDemo"; } }
   // routine-mastery celebration: did a non-trauma routine just get every projection to 100%?
-  const _rname=exam.finalRoutine||exam.exam; const _celeb=grade.perfect&&_rname&&!isTraumaRoutine(_rname); const _wasCleared=_celeb?routineCleared(_rname):true; const _region=exam.region; const _wasLocked={}; if(_celeb)traumaRoutinesInRegion(_region).forEach(t=>{ _wasLocked[t]=routineLockInfo(t).locked; });
+  const _rname=exam.finalRoutine||exam.exam; const _celeb=grade.perfect&&_rname&&!isTraumaRoutine(_rname); const _wasCleared=_celeb?routineCleared(_rname):true; const _region=exam.region; const _wasProf=(grade.perfect&&_region)?(regionStatus(_region).status==="proficient"):true; const _wasLocked={}; if(_celeb)traumaRoutinesInRegion(_region).forEach(t=>{ _wasLocked[t]=routineLockInfo(t).locked; });
   recordAttempt(exam,grade); comboFx(grade,bonus); render();
-  if(_celeb&&!_wasCleared&&routineCleared(_rname)){ const _unlocked=traumaRoutinesInRegion(_region).filter(t=>_wasLocked[t]&&!routineLockInfo(t).locked); markNewUnlock(_unlocked); celebrateRoutine(_rname,_unlocked); } }
+  let _celebrated=false;
+  if(_celeb&&!_wasCleared&&routineCleared(_rname)){ const _unlocked=traumaRoutinesInRegion(_region).filter(t=>_wasLocked[t]&&!routineLockInfo(t).locked); markNewUnlock(_unlocked); celebrateRoutine(_rname,_unlocked); _celebrated=true; }
+  if(!_celebrated&&grade.perfect&&_region&&!_wasProf&&regionStatus(_region).status==="proficient")celebrateProficiency(_region); }
 /** Reference radiograph for a projection (region|view key into the CC-licensed manifest), or null. */
 function radiographFor(exam){ if(typeof RADIOGRAPHS==="undefined"||!exam)return null; return RADIOGRAPHS[exam.region+"|"+exam.view]||null; }
 /* Native anatomical side of each stored reference radiograph (read from its lead marker / anatomy).
@@ -1591,10 +1605,15 @@ const RADIOGRAPH_NATIVE_SIDE={
   "Tib-Fib|Lateral":"right",               // marker "R"
   // Femur / Patella
   "Femur|AP":"left",                       // greater trochanter image-right, acetabulum image-left
-  "Patella|PA":"right"                     // marker "Dx", fibula image-left
+  "Patella|PA":"right",                    // marker "Dx", fibula image-left
+  // Pelvis / Hip
+  "Hip|AP Hip":"left"                      // flip for the right hip
 };
+/* Radiographs that are always mirror-reversed from the app's orientation (not laterality-stamped),
+   so they are flipped regardless of side. */
+const RADIOGRAPH_ALWAYS_FLIP=new Set(["Neck|Lateral","Lumbar|Lateral"]);
 /** true when the displayed radiograph should be horizontally mirrored to match the stamped side. */
-function radiographMirror(exam){ if(!exam||!exam._lat)return false; const nat=RADIOGRAPH_NATIVE_SIDE[exam.region+"|"+exam.view]; return !!nat&&nat!==exam._lat; }
+function radiographMirror(exam){ if(!exam)return false; const key=exam.region+"|"+exam.view; if(RADIOGRAPH_ALWAYS_FLIP.has(key))return true; if(!exam._lat)return false; const nat=RADIOGRAPH_NATIVE_SIDE[key]; return !!nat&&nat!==exam._lat; }
 function radiographMirrorStyle(exam){ return radiographMirror(exam)?"transform:scaleX(-1);":""; }
 /* Native anatomical side of each CR-drag PATIENT PHOTO (read from the photo). When a
    laterality-specific projection is stamped the opposite side, the photo is mirrored AND the
@@ -1603,11 +1622,25 @@ function radiographMirrorStyle(exam){ return radiographMirror(exam)?"transform:s
 const CR_PHOTO_NATIVE_SIDE={
   "Foot|AP":"right","Foot|Oblique":"right","Foot|Lateral":"right",
   "Hand|PA":"right","Hand|Oblique":"right",
-  "Ankle|AP":"right","Ankle|Mortise":"right","Ankle|Medial Oblique":"right"
-  // Knee/Patella/Femur/Tib-Fib/Forearm/Humerus/Shoulder CR photos are bare limbs or non-lateralizing
-  // views (side not visible), so mirroring has no effect and they are intentionally left unmapped.
+  "Ankle|AP":"right","Ankle|Mortise":"right","Ankle|Medial Oblique":"right",
+  // Skull family (lat_skull photo is a LEFT skull) -> flip for the right side
+  "Cranium|Lateral":"left","Facial Bones|Lateral":"left",
+  // Hip frog photo is a RIGHT hip -> flip for the left hip
+  "Hip|Unilateral Frog Leg":"right",
+  // Shoulder rotation/Y/axillary photos are LEFT shoulders -> flip for the right shoulder
+  "Shoulder|AP Internal":"left","Shoulder|AP External":"left","Shoulder|Shoulder Y":"left","Shoulder|Superoinferior Axillary":"left"
+  // Other CR photos are bare limbs / non-lateralizing views; mirroring is a no-op, left unmapped.
 };
-function crPhotoMirror(exam){ if(!exam||!exam._lat)return false; const nat=CR_PHOTO_NATIVE_SIDE[normalizeValue(exam.region)+"|"+normalizeValue(exam.view)]; return !!nat&&nat!==exam._lat; }
+/* CR photos whose laterality is baked into the view NAME (not _lat-stamped), where the stored photo
+   shows the opposite side. nasal_lat_r and tmj_schuller are both RIGHT images, so every Left TMJ view
+   that uses them is flipped. */
+const CR_PHOTO_ALWAYS_FLIP=new Set([
+  "TMJ|Axiolateral (Schuller) - Closed Mouth (Left)",
+  "TMJ|Axiolateral (Schuller) - Open Mouth (Left)",
+  "TMJ|Axiolateral Oblique (Law) - Closed Mouth (Left)",
+  "TMJ|Axiolateral Oblique (Law) - Open Mouth (Left)"
+]);
+function crPhotoMirror(exam){ if(!exam)return false; const key=normalizeValue(exam.region)+"|"+normalizeValue(exam.view); if(CR_PHOTO_ALWAYS_FLIP.has(key))return true; if(!exam._lat)return false; const nat=CR_PHOTO_NATIVE_SIDE[key]; return !!nat&&nat!==exam._lat; }
 /* Laterality wording: paired parts read "Right Hand"; midline skull structures read
    "Cranium - Right side" / "Lateral (Right side)" since there is only one cranium. */
 function sideOf(exam){ return (exam&&exam._lat)?(exam._lat==="left"?"Left":"Right"):""; }
@@ -1718,7 +1751,21 @@ function renderLockedRoutineBlock(routine,lock){ const pct=lock.total?Math.round
 /* Big "routine mastered" moment - fires when a non-trauma routine hits 100% on every projection. */
 let _celebTimer=null;
 function celebrateRoutine(name,unlocked){ try{ fxPlay("milestone"); }catch(e){} const colors=["#fbbf24","#f59e0b","#22d3ee","#34d399","#a78bfa","#fb7185","#f472b6"]; let conf=""; for(let i=0;i<48;i++){ const c=colors[i%colors.length]; const l=(Math.random()*100).toFixed(2); const dl=(Math.random()*0.6).toFixed(2); const du=(2.6+Math.random()*2).toFixed(2); const rot=Math.floor(Math.random()*360); const w=6+Math.floor(Math.random()*7); conf+=`<i style="left:${l}%;background:${c};width:${w}px;height:${(w*0.55).toFixed(1)}px;animation-delay:${dl}s;animation-duration:${du}s;transform:rotate(${rot}deg)"></i>`; } const unlockHtml=(unlocked&&unlocked.length)?`<div class="celeb-unlock"><span class="celeb-lock">🔓</span><span>New trauma routine unlocked<br><b>${unlocked.map(esc).join(" & ")}</b></span></div>`:""; const medal=`<svg class="celeb-medal" viewBox="0 0 120 120"><defs><radialGradient id="celebG" cx="0.5" cy="0.38" r="0.7"><stop offset="0" stop-color="#fff7db"/><stop offset="0.5" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></radialGradient></defs><circle cx="60" cy="60" r="50" fill="url(#celebG)" stroke="#fff8e1" stroke-width="3"/><circle cx="60" cy="60" r="42" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.4" stroke-dasharray="2 5"/><path d="M60 28 l8 16.5 18.2 2.6 -13.1 12.8 3.1 18.1 -16.2-8.5 -16.2 8.5 3.1-18.1 -13.1-12.8 18.2-2.6 Z" fill="#fffdf5" stroke="#f59e0b" stroke-width="1"/></svg>`; const el=document.createElement("div"); el.className="celebrate-overlay"; el.onclick=dismissCelebrate; el.innerHTML=`<div class="celeb-rays"></div><div class="celeb-confetti">${conf}</div><div class="celeb-core">${medal}<div class="celeb-title">ROUTINE MASTERED</div><div class="celeb-sub">${esc(name)}</div><div class="celeb-note">Every projection cleared at 100%</div>${unlockHtml}<div class="celeb-tap">tap to continue</div></div>`; document.body.appendChild(el); if(_celebTimer)clearTimeout(_celebTimer); _celebTimer=setTimeout(dismissCelebrate,6500); }
-function dismissCelebrate(){ const el=document.querySelector(".celebrate-overlay"); if(el){ el.classList.add("closing"); setTimeout(()=>{ try{el.remove();}catch(e){} },360); } if(_celebTimer){ clearTimeout(_celebTimer); _celebTimer=null; } }
+function dismissCelebrate(){ const el=document.querySelector(".celebrate-overlay:not(.prof-overlay)"); if(el){ el.classList.add("closing"); setTimeout(()=>{ try{el.remove();}catch(e){} },360); } if(_celebTimer){ clearTimeout(_celebTimer); _celebTimer=null; } }
+/* Skill-Map proficiency moment: the body turns green in the mastered region and the figure says thanks. */
+let _profTimer=null;
+function celebrateProficiency(region){ const spec=(typeof BODY_SPEC!=="undefined")?BODY_SPEC.find(s=>s.region===region):null; if(!spec)return; try{ fxPlay("milestone"); }catch(e){}
+  const limb=(x1,y1,x2,y2,w)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(148,163,184,.14)" stroke-width="${w}" stroke-linecap="round"/>`;
+  const body=`<g fill="rgba(148,163,184,.12)" stroke="rgba(148,163,184,.30)" stroke-width="2"><circle cx="450" cy="105" r="80"/><rect x="365" y="235" width="170" height="350" rx="62"/><rect x="375" y="570" width="150" height="95" rx="46"/></g>`+
+    limb(450,180,450,225,44)+limb(358,268,300,425,42)+limb(300,425,265,565,34)+limb(262,570,248,650,34)+limb(542,268,600,425,42)+limb(600,425,635,565,34)+limb(638,570,652,650,34)+
+    limb(412,650,396,865,54)+limb(396,865,390,1075,42)+limb(388,1090,330,1130,36)+limb(488,650,504,865,54)+limb(504,865,510,1075,42)+limb(512,1090,570,1130,36);
+  const g="#34d399";
+  const regionShapes=spec.shapes.map(sh=>{ if(sh.k==="cap")return `<line x1="${sh.x1}" y1="${sh.y1}" x2="${sh.x2}" y2="${sh.y2}" stroke="${g}" stroke-width="${sh.w}" stroke-linecap="round"/>`; if(sh.k==="ring")return `<ellipse cx="${sh.cx}" cy="${sh.cy}" rx="${sh.rx}" ry="${sh.ry}" fill="none" stroke="${g}" stroke-width="${sh.sw}"/>`; if(sh.k==="e")return `<ellipse cx="${sh.cx}" cy="${sh.cy}" rx="${sh.rx}" ry="${sh.ry}" fill="rgba(52,211,153,.42)" stroke="${g}" stroke-width="3"/>`; return `<circle cx="${sh.cx}" cy="${sh.cy}" r="${sh.r}" fill="rgba(52,211,153,.42)" stroke="${g}" stroke-width="3"/>`; }).join("");
+  const bubble=`<g class="prof-bubble"><path d="M560 96 l-36 15 l36 12 Z" fill="#0b1120" stroke="${g}" stroke-width="3"/><rect x="558" y="46" width="298" height="104" rx="22" fill="#0b1120" stroke="${g}" stroke-width="3"/><text x="707" y="112" text-anchor="middle" fill="#d1fae5" font-size="42" font-weight="800" font-family="system-ui,sans-serif">Thank you!</text></g>`;
+  const el=document.createElement("div"); el.className="celebrate-overlay prof-overlay"; el.onclick=dismissProficiency;
+  el.innerHTML=`<div class="celeb-rays"></div><div class="prof-core"><svg class="prof-body" viewBox="0 0 900 1250" xmlns="http://www.w3.org/2000/svg"><defs><filter id="profGlow" x="-70%" y="-70%" width="240%" height="240%"><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#34d399" flood-opacity="0.7"/></filter></defs>${body}<g class="prof-region" filter="url(#profGlow)">${regionShapes}</g>${bubble}</svg><div class="celeb-title prof-title">${esc(String(region).toUpperCase())} PROFICIENT</div><div class="celeb-note">Three perfect runs. You have this part down.</div><div class="celeb-tap">tap to continue</div></div>`;
+  document.body.appendChild(el); if(_profTimer)clearTimeout(_profTimer); _profTimer=setTimeout(dismissProficiency,6500); }
+function dismissProficiency(){ const el=document.querySelector(".prof-overlay"); if(el){ el.classList.add("closing"); setTimeout(()=>{ try{el.remove();}catch(e){} },360); } if(_profTimer){ clearTimeout(_profTimer); _profTimer=null; } }
 
 /* Skill Map detail: jump straight into a whole routine or a single projection (respects locks). */
 function skillPlayRoutine(name){ const lock=routineLockInfo(name); if(lock.locked){ flash("🔒 Clear "+lock.prereq+" (100% each) to unlock "+name); return; } _skillMapOpen=false; _skillMapSel=null; practiceRoutine(name); }
@@ -1839,7 +1886,7 @@ function assignLineByIndex(id,zoneIdx){ if(state.showDetails)return; const exam=
 
 /* --- Features 3 & 4: Markers & Shields --- */
 /** Required anatomical marker for an exam (null when not applicable). */
-function getMarkerRequirement(exam){ if(!exam)return null; if(exam._lat){ if(isUnilateralExam(exam)||/lateral|rhese/i.test(normalizeValue(exam.view)))return {type:"directional",required:[exam._lat]}; } const region=exam.region; if(region==="SI Joints")return {type:"orientation",required:["side up"]}; if(region==="Ribs"){ const enm=normalizeValue(exam.exam||""); const vw=normalizeValue(exam.view).toLowerCase(); if(/^Unilateral Ribs Routine/.test(enm))return {type:"directional",required:[/\(right,/.test(enm)?"right":"left"]}; if(/rpo|lao/.test(vw))return {type:"directional",required:["right"]}; if(/lpo|rao/.test(vw))return {type:"directional",required:["left"]}; return {type:"directional",required:["left","right"]}; } if(/^Acetabulum/.test(exam.exam||""))return {type:"directional",required:["right"]}; if(/^Trauma C-Spine/.test(exam.exam||""))return {type:"directional",required:["left"]}; if(region==="Orbits"&&/^Lateral$/i.test(normalizeValue(exam.view)))return {type:"directional",required:["left","right"]}; const ptText=normalizeText(exam.pt||""); if(ptText.includes("left lateral")||ptText.includes("left side"))return {type:"directional",required:["left"]}; if(ptText.includes("right lateral")||ptText.includes("right side"))return {type:"directional",required:["right"]}; if(/lateral|rhese/i.test(normalizeValue(exam.view)))return {type:"directional",required:["left"]}; return {type:"directional",required:["left","right"]}; }
+function getMarkerRequirement(exam){ if(!exam)return null; if(exam._lat){ if(isUnilateralExam(exam)||/lateral|rhese/i.test(normalizeValue(exam.view)))return {type:"directional",required:[exam._lat]}; } if(/bilateral/i.test(normalizeValue(exam.view)))return {type:"directional",required:["left","right"]}; const region=exam.region; if(region==="SI Joints")return {type:"orientation",required:["side up"]}; if(region==="Ribs"){ const enm=normalizeValue(exam.exam||""); const vw=normalizeValue(exam.view).toLowerCase(); if(/^Unilateral Ribs Routine/.test(enm))return {type:"directional",required:[/\(right,/.test(enm)?"right":"left"]}; if(/rpo|lao/.test(vw))return {type:"directional",required:["right"]}; if(/lpo|rao/.test(vw))return {type:"directional",required:["left"]}; return {type:"directional",required:["left","right"]}; } if(/^Acetabulum/.test(exam.exam||""))return {type:"directional",required:["right"]}; if(/^Trauma C-Spine/.test(exam.exam||""))return {type:"directional",required:["left"]}; if(region==="Orbits"&&/^Lateral$/i.test(normalizeValue(exam.view)))return {type:"directional",required:["left","right"]}; const ptText=normalizeText(exam.pt||""); if(ptText.includes("left lateral")||ptText.includes("left side"))return {type:"directional",required:["left"]}; if(ptText.includes("right lateral")||ptText.includes("right side"))return {type:"directional",required:["right"]}; if(/lateral|rhese/i.test(normalizeValue(exam.view)))return {type:"directional",required:["left"]}; return {type:"directional",required:["left","right"]}; }
 /** Extremity exams get a randomly assigned laterality, consistent within a routine. */
 function isExtremityExam(exam){ const g=POSITION_GROUPS[exam?.region]; return g==="upperExt"||g==="lowerExt"||exam?.region==="Femur"; }
 /** Unilateral studies get a laterality + matching marker. Includes the hip (but NOT the bilateral AP pelvis survey). */
@@ -2037,7 +2084,11 @@ function renderRoom(exam){
   const exposing=state.feedback?" exposing":"";
   const exposeFlash=state.feedback==="correct"?`<div class="expose-flash show"></div>`:"";
   const buckyKind=wallMode?"wall":tableMode?"table":"none";
-  const mount=`<div class="room3d" id="room3d-mount" data-pose="${pose}" data-bucky="${buckyKind}" data-sid="${esc(sid)}" data-cr="${ang.horizontal?0:ang.deg}" data-dir="${ang.dir}" data-horiz="${ang.horizontal?1:0}" data-region="${esc(exam.region)}" data-view="${esc(exam.view)}" data-ir="${esc(irEff)}" data-pt="${esc(normalizeValue(exam.pt||""))}" data-lat="${esc(exam._lat||"")}" data-fb="${esc(state.feedback||"")}" data-dim="${userIr?1:0}" data-hidebeam="${(state.dragMode&&!state.showDetails)?1:0}"><div class="room3d-fallback">3D room unavailable - WebGL is off.</div></div>`;
+  // The tube follows the student's dialed angle during practice (starts perpendicular, reaches the
+  // correct beam position when they select the right angle); on review it snaps to the correct angle.
+  const tubeDeg=state.showDetails?ang.deg:Math.abs(craSigned);
+  const tubeDir=state.showDetails?ang.dir:(craSigned>0?1:craSigned<0?-1:0);
+  const mount=`<div class="room3d" id="room3d-mount" data-pose="${pose}" data-bucky="${buckyKind}" data-sid="${esc(sid)}" data-cr="${ang.horizontal?0:tubeDeg}" data-dir="${ang.horizontal?ang.dir:tubeDir}" data-horiz="${ang.horizontal?1:0}" data-region="${esc(exam.region)}" data-view="${esc(exam.view)}" data-ir="${esc(irEff)}" data-pt="${esc(normalizeValue(exam.pt||""))}" data-lat="${esc(exam._lat||"")}" data-fb="${esc(state.feedback||"")}" data-dim="${userIr?1:0}" data-hidebeam="${(state.dragMode&&!state.showDetails)?1:0}"><div class="room3d-fallback">3D room unavailable - WebGL is off.</div></div>`;
   const hud=`<div class="room3d-hud"><span class="hud-hint">drag to orbit</span></div>`;
   return `<div class="ir-bar" data-wt="ir"><div class="ir-bar-title">Detector / Bucky</div><div class="ir-btns"><button class="ir-btn ${userIr.includes("wall")?"active":""}" onclick="pick('ir','Wall bucky')">Wall bucky</button><button class="ir-btn ${userIr.includes("table")?"active":""}" onclick="pick('ir','Table bucky')">Table bucky</button><button class="ir-btn ${userIr.includes("non")?"active":""}" onclick="pick('ir','Non-Bucky')">Non-Bucky</button></div></div><div class="room ${wallMode?"wall-mode":""} ${tableMode?"table-mode":""}">
     ${mount}${hud}
